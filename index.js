@@ -11,20 +11,29 @@ const port = 3000;
 dotenv.config();
 require("dotenv").config();
 const mongoose = require("mongoose");
+const encodePassword = encodeURIComponent(process.env.DB_PASSWORD);
 const mongoDB =
   "mongodb+srv://" +
   process.env.DB_USER +
   ":" +
-  process.env.DB_PASSWORD +
+  encodePassword +
   "@" +
   process.env.DB_SERVER +
   "/" +
   process.env.DB_NAME +
   "?retryWrites=true&w=majority";
 async function main() {
-  await mongoose.connect(mongoDB);
+  try {
+    await mongoose.connect(mongoDB);
+      console.log("Conexión a MongoDB exitosa");
+  } catch (err) {
+    console.log("Error conectando a MongoDB:", err);
+  }
 }
 main().catch((err) => console.log(err));
+
+
+
 
 // ROUTES -----------------------------
 app.use(express.json());
