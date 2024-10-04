@@ -9,7 +9,7 @@ const userSchema = new Schema({
   password: { type: String, required: true },
   city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, 
   dateOfBirth: { type: Date }, 
-  isAdministrator: { type: Boolean }, 
+  isAdministrator: { type: Boolean,default: false }, 
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' } ]
 
   /*I changed the field by creating a relationship of user and events. 

@@ -4,12 +4,14 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const users = require("./database/users");
 const authMiddlewares = require("./middlewares");
+const usersRouter= require("./routes/usersRouter");
+
 const app = express();
 const port = 3000;
-
+require("dotenv").config();
 // DB SETTING --------------------
 dotenv.config();
-require("dotenv").config();
+
 const mongoose = require("mongoose");
 const encodePassword = encodeURIComponent(process.env.DB_PASSWORD);
 const mongoDB =
@@ -32,11 +34,13 @@ async function main() {
 }
 main().catch((err) => console.log(err));
 
+app.use(express.json());
 
+app.use('/', usersRouter);
 
 
 // ROUTES -----------------------------
-app.use(express.json());
+/*
 
   app.get("/", (req, res) => {
     res.send("Hello World 2!");
@@ -63,7 +67,7 @@ app.post("/login", (req, res) => {
 app.get("/secret", (req, res) => {
   res.send(require("crypto").randomBytes(32).toString("hex"));
 });
-
+*/
 // Listening ---------------------------------------------------
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
