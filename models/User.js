@@ -8,12 +8,7 @@ const userSchema = new Schema({
   city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, 
   dateOfBirth: { type: Date }, 
   isAdministrator: { type: Boolean }, 
-  event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' } 
+  events: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' } 
 });
 
 module.exports = mongoose.model("User", userSchema);
-
-
-
-
-  
