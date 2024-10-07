@@ -48,7 +48,7 @@ function generateSecret(length = 32) {
     return crypto.randomBytes(length).toString('hex');
 }
 
-console.log(generateSecret(16));
+//console.log(generateSecret(16));
 
 
 /*
