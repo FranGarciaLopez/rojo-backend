@@ -36,7 +36,7 @@ async function userLogin (req,res){
 
   
     const token = jwt.sign(
-      { id: user.email, role: user.firstname },
+      { email: user.email, firstname: user.firstname },
      process.env.SECRET
     );
     return res.status(201).send({ token });
