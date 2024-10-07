@@ -35,14 +35,29 @@ async function main() {
 main().catch((err) => console.log(err));
 
 // ROUTES -----------------------------
+
+
 app.use(express.json());
 
+
+app.use('/', usersRouter);
+
+const crypto = require('crypto');
+
+function generateSecret(length = 32) {
+    return crypto.randomBytes(length).toString('hex');
+}
+
+console.log(generateSecret(16));
+
+
+/*
   app.get("/", (req, res) => {
     res.send("Hello World 2!");
   });
 
 app.post("/login", (req, res) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
   const user = users.find((userDB) => userDB.username === username);
   if (user && user.password === password) {
     const token = jwt.sign(
@@ -61,7 +76,7 @@ app.post("/login", (req, res) => {
 
 app.get("/secret", (req, res) => {
   res.send(require("crypto").randomBytes(32).toString("hex"));
-});
+});*/
 
 // Listening ---------------------------------------------------
 app.listen(port, () => {
