@@ -6,7 +6,7 @@ const middlewares = require('../middlewares');
 const usersRouter = express.Router();
 
 usersRouter.post('/register', userRegister);
-usersRouter.post('/login',middlewares.validateToken, userLogin);
+usersRouter.post('/login', userLogin);
 usersRouter.get('/', getAllUsers);
 
 module.exports = usersRouter;
