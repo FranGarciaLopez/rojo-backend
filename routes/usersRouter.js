@@ -1,12 +1,12 @@
 
 const express = require('express');
-const { userRegister, userLogin, getAllUsers } = require('../controllers/usersController');
-const middlewares = require('../middlewares');
+const userController = require('../controllers/usersController');
+const { validateToken } = require('../middlewares/middlewares');
 
 const usersRouter = express.Router();
 
-usersRouter.post('/register', userRegister);
-usersRouter.post('/login', userLogin);
-usersRouter.get('/', getAllUsers);
+usersRouter.post('/register', userController.userRegister);
+usersRouter.post('/login', userController.userLogin);
+usersRouter.get('/user', validateToken, userController.getUser);
 
-module.exports = usersRouter;
+module.exports = usersRouter
