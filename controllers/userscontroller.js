@@ -52,15 +52,13 @@ const userController = {
     try {
       const user = await User.findOne({ firstname: req.user.firstname, email: req.user.email })
         .populate('city')
-        .populate('events');
 
       res.status(200).json({
         status: "success",
-        data: {
-          user,
-        },
+        user,
       });
     } catch (error) {
+
       return res.status(500).json({
         status: "error",
         message: "Error fetching users"
