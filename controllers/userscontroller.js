@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-// const City = require('../models/City');
+ const City = require('../models/City');
 
 const userController = {
 
@@ -12,12 +12,18 @@ const userController = {
       return res.status(409).json({ message: 'User already exists' });
     }
 
+    let cityDocument = await City.findOne({ name: req.body.city  });
+    if (!cityDocument) {
+        cityDocument = new City({ name: req.body.city });
+        await cityDocument.save();
+      }
+
     const newUser = new User({
       firstname,
       lastname,
       email,
       password,
-      city,
+      city: cityDocument._id,
       dateOfBirth,
       isAdmin: false,
       organizedEvents: 0,
