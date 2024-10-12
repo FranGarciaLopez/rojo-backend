@@ -6,7 +6,10 @@ const usersRouter = require("./routes/usersRouter");
 const cors = require('cors');
 
 const app = express();
+const seedcities = require('./scripts/seedcities');
+
 app.use(express.json());
+
 
 // CORS -----------------------------
 app.use(cors({
@@ -37,11 +40,15 @@ const mongoDB =
 async function main() {
   try {
     await mongoose.connect(mongoDB);
+ 
+
   } catch (err) {
     console.log(err);
   }
 }
 main().catch((err) => console.log(err));
+
+
 
 // ROUTES -------------------------
 app.use('/', usersRouter);
