@@ -1,6 +1,6 @@
 
 const Event = require('../models/Event');
-const User = require('../models/User');
+
 const jwt = require('jsonwebtoken');
 
 
@@ -14,6 +14,8 @@ const eventController ={
 
             const {title, city, description, administrator, dateTime, location, category, photos}= req.body;
 
+       
+
             const newEvent = new Event(
              {
                  title,
@@ -23,7 +25,10 @@ const eventController ={
                  dateTime,
                  location,
                  category,
-                 photos
+                 photos: photos || [],
+                 createdAt: new Date().toISOString(), 
+                 modifiedAt: new Date().toISOString(),
+                 deletedAt: null,
 
 
              }
@@ -37,7 +42,7 @@ const eventController ={
     
     },
 
-    asyn event
+ 
 
 
 }
