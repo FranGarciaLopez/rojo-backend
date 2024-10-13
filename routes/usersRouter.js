@@ -9,4 +9,5 @@ usersRouter.post('/register', userController.userRegister);
 usersRouter.post('/login', userController.userLogin);
 usersRouter.get('/user', validateToken, userController.getUser);
 
+
 module.exports = usersRouter

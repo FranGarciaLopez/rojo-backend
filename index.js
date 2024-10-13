@@ -3,6 +3,7 @@ const express = require('express');
 const dotenv = require("dotenv");
 
 const usersRouter = require("./routes/usersRouter");
+const eventsRouter = require("./routes/eventsRouter");
 const cors = require('cors');
 
 const app = express();
@@ -52,6 +53,7 @@ main().catch((err) => console.log(err));
 
 // ROUTES -------------------------
 app.use('/', usersRouter);
+app.use('/events', eventsRouter);
 
 // SERVER -------------------------
 app.listen(port, () => {
