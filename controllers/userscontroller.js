@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
  const City = require('../models/City');
+ const middlewares = require('../middlewares/middlewares');
 
 const userController = {
 
@@ -11,10 +12,11 @@ const userController = {
     if (userExists) {
       return res.status(409).json({ message: 'User already exists' });
     }
-
-    let cityDocument = await City.findOne({ name: req.body.city  });
+        //--- tolower case
+    const formattedCity = middlewares.formattedText(city);
+    let cityDocument = await City.findOne({ name: formattedCity });
     if (!cityDocument) {
-        cityDocument = new City({ name: req.body.city });
+        cityDocument = new City({ name: formattedCity });
         await cityDocument.save();
       }
 

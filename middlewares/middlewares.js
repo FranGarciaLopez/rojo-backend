@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const authMiddlewares = {
 
   validateToken: (req, res, next) => {
-    
+
     if (!req.headers.authorization) {
       return res.status(401).json({ message: "You are not authorized" });
     }
@@ -30,6 +30,15 @@ const authMiddlewares = {
     }
     next();
   },
+
+  formattedText: (req, res, next) => {
+    const city = req.body.city;
+    const formattedCity = city.charAt(0).toUpperCase() + city.slice(1);
+    next();
+    
+    return formattedCity;
+    
+  }
 };
 
 module.exports = authMiddlewares;

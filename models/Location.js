@@ -9,7 +9,7 @@ const LocationSchema = new Schema({
     country:{type:String}, 
     postalcode:{type:String}
 
-  
+
   });
   
   module.exports = mongoose.model("Location", LocationSchema);
