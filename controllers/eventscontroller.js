@@ -11,12 +11,11 @@ const eventController = {
         try {
             const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
 
-           
             let cityDocument = await City.findOne({ name: city });
             if (!cityDocument) {
                 cityDocument = new City({ name: city });
                 await cityDocument.save();
-            }
+              }
 
             const parsedDateTime = new Date(dateTime);
             if (isNaN(parsedDateTime.getTime())) {
@@ -54,7 +53,10 @@ const eventController = {
             const savedEvent = await newEvent.save();
             res.status(201).json(savedEvent);
         } catch (error) {
-            res.status(500).json({ message: 'Error creating event', error });
+            res.status(500).json({
+                message: 'Error creating event',
+                error: error.message
+            });
         }
     },
 
