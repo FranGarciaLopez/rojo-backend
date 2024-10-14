@@ -10,4 +10,4 @@ usersRouter.post('/login', userController.userLogin);
 usersRouter.get('/user', validateToken, userController.getUser);
 
 
-module.exports = usersRouter
+module.exports = usersRouter;

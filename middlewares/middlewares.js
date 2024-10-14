@@ -31,14 +31,14 @@ const authMiddlewares = {
     next();
   },
 
-  formattedText: (req, res, next) => {
+ /* formattedText: (req, res, next) => {
     const city = req.body.city;
     const formattedCity = city.charAt(0).toUpperCase() + city.slice(1);
     next();
     
     return formattedCity;
     
-  }
+  }*/
 };
 
 module.exports = authMiddlewares;
