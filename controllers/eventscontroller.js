@@ -3,13 +3,29 @@ const Event = require('../models/Event');
 const City = require('../models/City');
 const Category = require('../models/Category');
 const Location = require('../models/Location');
+const multer = require("multer");
+
 
 const jwt = require('jsonwebtoken');
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+
+  const storage = multer.memoryStorage();
+
 
 const eventController = {
     async eventRegister(req, res) {
         try {
-            const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
+            const { title, city, description, administrator, dateTime, location, category,photos } = req.body;
+
+            if (!Array.isArray(photos)) {
+                return res.status(400).json({ message: 'photoUrls must be an array of URLs' });
+            }
 
             let cityDocument = await City.findOne({ name: city });
             if (!cityDocument) {
@@ -35,6 +51,7 @@ const eventController = {
                 await locationDocument.save(); 
             }
 
+           
           
             const newEvent = new Event({
                 title,
@@ -42,9 +59,9 @@ const eventController = {
                 description,
                 administrator,
                 dateTime: parsedDateTime,
-                location: locationDocument._id,
+               location: null,
                 category: categoryDocument._id,
-                photos: photos || [],
+                 photos,
                 createdAt: new Date().toISOString(),
                 modifiedAt: new Date().toISOString(),
                 deletedAt: null,
@@ -70,6 +87,9 @@ const eventController = {
             res.status(500).json({ message: 'Error getting events', error });
         }
     },
+
+  
 };
 
-module.exports=eventController;
+module.exports={
+    eventController};
