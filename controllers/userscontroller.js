@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const userController = {
 
   async userRegister(req, res) {
-    const { firstname, lastname, email, password, city, dateOfBirth } = req.body;
+    const { firstname, lastname, email, password, city, dateOfBirth, photos } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -29,6 +29,7 @@ const userController = {
       isAdmin: false,
       organizedEvents: 0,
       joinedEvents: 0,
+      photos,
       modifiedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       deletedAt: null,

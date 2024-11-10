@@ -10,8 +10,8 @@ const userSchema = new Schema({
   city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, 
   dateOfBirth: { type: Date }, 
   isAdministrator: { type: Boolean,default: false }, 
-  events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' } ]
-
+  events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' } ],
+  photos: [{ type: String }] ,
   /*I changed the field by creating a relationship of user and events. 
   This relationship is one to many, 
   which created an array of events in the field to be able to filter for each user.*/
