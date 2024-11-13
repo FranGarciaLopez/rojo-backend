@@ -11,13 +11,9 @@ const userSchema = new Schema({
   dateOfBirth: { type: Date }, 
   isAdministrator: { type: Boolean,default: false }, 
   events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' } ],
-
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'category' },
   dayOfTheWeek: { type: Date, required: true },
-
-  /*I changed the field by creating a relationship of user and events. 
-  This relationship is one to many, 
-  which created an array of events in the field to be able to filter for each user.*/
+  photos: [{ type: String }] ,
 },{ timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);

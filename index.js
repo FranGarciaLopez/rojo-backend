@@ -6,13 +6,27 @@ const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
 const citiesRouter = require("./routes/citiesRouter");
 const groupRouter = require("./routes/groupRouter");
-
+const photosRouter = require("./routes/photosRouter");
+const categoriesRouter = require("./routes/categoriesRouter");
 const cors = require('cors');
 
 const app = express();
 const seedcities = require('./scripts/seedcities');
 
+multer = require("multer");
+const upload = multer({dest:"uploads/"});
+const cloudinary = require("cloudinary").v2;
+
+
 app.use(express.json());
+
+require('dotenv').config();
+
+cloudinary.config({
+    cloud_name:process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 
 // CORS -----------------------------
@@ -54,13 +68,17 @@ main().catch((err) => console.log(err));
 
 
 
+
+
+
+
 // ROUTES -------------------------
 app.use('/', usersRouter);
 app.use('/events', eventsRouter);
 app.use('/cities', citiesRouter );
 app.use('/groups', groupRouter );
-
-
+app.use('/photos', photosRouter );
+app.use('/category', categoriesRouter );
 
 // SERVER -------------------------
 app.listen(port, () => {
