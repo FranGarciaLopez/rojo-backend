@@ -1,10 +1,10 @@
 // IMPORTING ----------------------
 const express = require('express');
 const dotenv = require("dotenv");
-
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
 const citiesRouter = require("./routes/citiesRouter");
+
 const groupRouter = require("./routes/groupRouter");
 
 const cors = require('cors');
