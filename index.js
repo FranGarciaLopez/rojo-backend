@@ -5,6 +5,8 @@ const dotenv = require("dotenv");
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
 const citiesRouter = require("./routes/citiesRouter");
+const groupRouter = require("./routes/groupRouter");
+
 const cors = require('cors');
 
 const app = express();
@@ -56,6 +58,9 @@ main().catch((err) => console.log(err));
 app.use('/', usersRouter);
 app.use('/events', eventsRouter);
 app.use('/cities', citiesRouter );
+app.use('/groups', groupRouter );
+
+
 
 // SERVER -------------------------
 app.listen(port, () => {
@@ -63,3 +68,17 @@ app.listen(port, () => {
 });
 
 module.exports = { app };
+/*
+USER ROUTE
+    POST /register
+    POST /login
+    GET  /user
+EVENTS ROUTE
+    POST /events/eventregister
+    GET  /events/events
+CITIES ROUTE
+    GET /cities/cities
+GROUPS ROUTE
+    POST /groups/create
+    GET  /groups/show
+*/

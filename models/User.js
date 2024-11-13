@@ -10,7 +10,10 @@ const userSchema = new Schema({
   city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, 
   dateOfBirth: { type: Date }, 
   isAdministrator: { type: Boolean,default: false }, 
-  events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' } ]
+  events: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Event' } ],
+
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'category' },
+  dayOfTheWeek: { type: Date, required: true },
 
   /*I changed the field by creating a relationship of user and events. 
   This relationship is one to many, 
