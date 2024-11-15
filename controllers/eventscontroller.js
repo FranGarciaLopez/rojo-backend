@@ -59,7 +59,7 @@ const eventController = {
                 description,
                 administrator,
                 dateTime: parsedDateTime,
-               location: null,
+                location: null,
                 category: categoryDocument._id,
                  photos,
                 createdAt: new Date().toISOString(),

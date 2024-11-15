@@ -24,13 +24,13 @@ const photosController = {
           console.log("Result:", result);
           photoUrls.push(result.secure_url);
         }
-        console.log("Estas son las url que envia" ,photoUrls);
-       
+        console.log("Estas son las url que envia", photoUrls);
+
         return res.status(200).json({ urls: photoUrls });
-  
+
       }
 
-    
+
       return res.status(400).json({ message: "No files to upload" });
     } catch (error) {
       console.error('Error uploading images:', error);
