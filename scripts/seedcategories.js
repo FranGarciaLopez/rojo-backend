@@ -4,19 +4,19 @@ const Category = require('../models/Category');
 
 async function seedCategories() {
     const categories = [
-        { name: 'Concerts' },
-        { name: 'Conferences' },
-        { name: 'Workshops' },
-        { name: 'Seminar' },
-        { name: 'Fairs' },
-        { name: 'Theater' },
-        { name: 'Cinema' },
-        { name: 'Art and Culture' },
-        { name: 'Food Events' },
-        { name: 'Children Events' },
-        { name: 'Outdoor Activities' },
-        { name: 'Networking' },
-        { name: 'Virtual Events' },
+        { categoryName: 'Concerts' },
+        { categoryName: 'Conferences' },
+        { categoryName: 'Workshops' },
+        { categoryName: 'Seminar' },
+        { categoryName: 'Fairs' },
+        { categoryName: 'Theater' },
+        { categoryName: 'Cinema' },
+        { categoryName: 'Art and Culture' },
+        { categoryName: 'Food Events' },
+        { categoryName: 'Children Events' },
+        { categoryName: 'Outdoor Activities' },
+        { categoryName: 'Networking' },
+        { categoryName: 'Virtual Events' },
 
     ];
 

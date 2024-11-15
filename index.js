@@ -8,10 +8,10 @@ const citiesRouter = require("./routes/citiesRouter");
 const groupRouter = require("./routes/groupRouter");
 const photosRouter = require("./routes/photosRouter");
 const categoriesRouter = require("./routes/categoriesRouter");
+
 const cors = require('cors');
 
 const app = express();
-const seedcities = require('./scripts/seedcities');
 
 multer = require("multer");
 const upload = multer({dest:"uploads/"});
@@ -58,27 +58,19 @@ const mongoDB =
 async function main() {
   try {
     await mongoose.connect(mongoDB);
- 
-
   } catch (err) {
     console.log(err);
   }
 }
 main().catch((err) => console.log(err));
 
-
-
-
-
-
-
 // ROUTES -------------------------
 app.use('/', usersRouter);
 app.use('/events', eventsRouter);
-app.use('/cities', citiesRouter );
-app.use('/groups', groupRouter );
-app.use('/photos', photosRouter );
-app.use('/category', categoriesRouter );
+app.use('/cities', citiesRouter);
+app.use('/categories', categoriesRouter);
+app.use('/groups', groupRouter);
+app.use('/photos', photosRouter);
 
 // SERVER -------------------------
 app.listen(port, () => {
@@ -86,17 +78,3 @@ app.listen(port, () => {
 });
 
 module.exports = { app };
-/*
-USER ROUTE
-    POST /register
-    POST /login
-    GET  /user
-EVENTS ROUTE
-    POST /events/eventregister
-    GET  /events/events
-CITIES ROUTE
-    GET /cities/cities
-GROUPS ROUTE
-    POST /groups/create
-    GET  /groups/show
-*/

@@ -31,24 +31,24 @@ const eventController = {
             if (!cityDocument) {
                 cityDocument = new City({ name: city });
                 await cityDocument.save();
-              }
+            }
 
             const parsedDateTime = new Date(dateTime);
             if (isNaN(parsedDateTime.getTime())) {
                 return res.status(400).json({ message: 'Invalid dateTime format' });
             }
 
-           
+
             const categoryDocument = await Category.findById(category);
             if (!categoryDocument) {
                 return res.status(400).json({ message: 'Invalid category ID' });
             }
 
-          
+
             let locationDocument = await Location.findOne({ name: location });
             if (!locationDocument) {
                 locationDocument = new Location({ name: location });
-                await locationDocument.save(); 
+                await locationDocument.save();
             }
 
            
@@ -88,8 +88,20 @@ const eventController = {
         }
     },
 
-  
+    async getEvent(req, res) {
+        try {
+            const { id } = req.params;
+            const event = await Event.findById(id).populate('city').populate('administrator').populate('location').populate('category');
+            if (!event) {
+                return res.status(404).json({ message: 'Event not found' });
+            }
+            res.status(200).json(event);
+
+        } catch (error) {
+            console.error('Error getting event:', error);
+            res.status(500).json({ message: 'Error getting event', error });
+        }
+    }
 };
 
-module.exports={
-    eventController};
+module.exports = eventController;

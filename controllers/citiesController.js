@@ -1,7 +1,7 @@
 const City = require('../models/City');
 
 
-const citiesController={
+const citiesController = {
     async getCities(req, res) {
         try {
             const cities = await City.find();
@@ -14,4 +14,4 @@ const citiesController={
 
 };
 
-module.exports= citiesController;
+module.exports = citiesController;

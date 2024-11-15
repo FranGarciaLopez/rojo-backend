@@ -8,5 +8,7 @@ const usersRouter = express.Router();
 usersRouter.post('/register', userController.userRegister);
 usersRouter.post('/login', userController.userLogin);
 usersRouter.get('/user', validateToken, userController.getUser);
+usersRouter.get('/users', userController.getUsers);
+usersRouter.put('/update-preferences', validateToken, userController.updateUserPreferences);
 
 module.exports = usersRouter;
