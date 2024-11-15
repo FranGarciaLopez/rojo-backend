@@ -4,7 +4,6 @@ const Group = require('../models/Group');
 const User = require('../models/User');
 const Event = require('../models/Event');
 
-
 const groupController = {
     async show(req, res) {
         try {
@@ -17,84 +16,112 @@ const groupController = {
         }
     },
     async create(req, res) {
+      process.stdout.write('\x1Bc'); // clear the terminal
+      console.log(" > Starting Aggregation Pipeline (6steps)");
       try {
-        const textback = "Here the code to create the group";
-        console.log(textback);
-        /**********************************************************************************************
-          Idea - when there is a perfect match among the three options (city, category, Day of the week) 
-                    available in the USER entity, a new GROUP will be created (AGGREGATION PIPELINE). 
-          ***********************************************************************************************/
-          /******************** STEP 1 - Get all the users with same preferences ************************/
-        // SAME FIRST NAME ************************************
- /*         const usersWithSameFirstname = await User.aggregate([
-            { $group: { _id: "$firstname", count: { $sum: 1 }, user: { $push: "$$ROOT" } } },
-            { $match: { count: { $gt: 1 } } }, // Only keep groups with more than one user
-            { $project: { _id: 0, firstname: "$_id", user: 1 } } // Optional: remove _id and rename fields
-          ]);
-          console.log('Users found with the same firstname:', usersWithSameFirstname);
-          res.status(500).json({ message: 'here', usersWithSameFirstname });
-  */        
-         // SAMFE FIRST NAME AND SAME CITY ****************************
-            // Aggregation pipeline to find users with the same firstname "Pedro" and city
-    const usersWithSameFirstnameAndCity = await User.aggregate([
-      { 
-        // Group users by both 'firstname' and 'city' fields
-        // This will create groups for each unique firstname-city combination
-        $group: { 
-          _id: { firstname: "$firstname", city: "$city" },  // Group key: combination of firstname and city
-          count: { $sum: 1 },  // Count the number of users in each group
-          users: { $push: "$$ROOT" }  // Collect all user documents in each group
-        } 
-      },
-      { 
-        // Filter groups to keep only those where:
-        // - firstname is "Pedro"
-        // - there is more than one user in the same city with this firstname
-        $match: { 
-          "_id.firstname": "Pedro",  // Only groups where firstname is "Pedro"
-          count: { $gt: 1 }  // Only groups with more than one user (duplicates)
-        } 
-      },
-      { 
-        // Project the final output format:
-        // - Remove '_id' field from output for cleaner JSON
-        // - Rename fields for clarity in the response
-        $project: { 
-          _id: 0,  // Exclude '_id' field
-          firstname: "$_id.firstname",  // Rename '_id.firstname' to 'firstname'
-          city: "$_id.city",  // Rename '_id.city' to 'city'
-          users: 1  // Include 'users' array as it is
-        } 
-      }
-    ]); 
-        // Step 2: Get all unique cities from the results
-    const cities = usersWithSameFirstnameAndCity.map(group => group.city);
+        const usersWithSameFirstnameAndCity = await User.aggregate([
+          { // Step 1: Group users by 'firstname' and 'city'
+            $group: { 
+              _id: { firstname: "$firstname", city: "$city" },
+              count: { $sum: 1 },
+              users: { $push: "$$ROOT" }  
+            } 
+          },
+          { // Step 2: Filter the groups to keep only those with more than 2 users
+            $match: { 
+              count: { $gt: 2 } 
+            } 
+          },
+          { // Step 3: Shuffle the users in each group by adding a random value to each user
+            $addFields: {
+              users: { 
+                $map: {
+                  input: "$users",  
+                  as: "user",
+                  in: {
+                    $mergeObjects: [
+                      "$$user", 
+                      { rand: { $rand: {} } }  
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          { // Step 4: Sort users by the random value
+            $addFields: {
+              users: { 
+                $sortArray: { input: "$users", sortBy: { rand: 1 } }
+              }
+            }
+          },
+          { // Step 5: Group users into subgroups of 5
+            $project: { 
+              _id: 0,
+              firstname: "$_id.firstname",
+              city: "$_id.city",
+              groupedUsers: {
+                $map: {
+                  input: { $range: [0, { $ceil: { $divide: ["$count", 5] } }] },
+                  as: "index",
+                  in: { 
+                    $slice: ["$users", { $multiply: ["$$index", 5] }, 5]  
+                  }
+                }
+              }
+            }
+          },
+          { // Step 6: Lookup events based on the city
+            $lookup: {
+              from: "events",
+              localField: "city",
+              foreignField: "city",
+              as: "events"
+            }
+          },
+          { 
+            $project: { 
+              firstname: 1,
+              city: 1,
+              groupedUsers: 1,
+              events: 1
+            }
+          }
+        ]);
+        console.log(" > Computation Compelted...");
+        // Log the final result
+        console.log(' > Users with events:', usersWithSameFirstnameAndCity);
 
-// Step 3: Use Promise.all to find events in each city concurrently
-    const eventsInSameCities = await Promise.all(
-      cities.map(async city => {
-        const eventsInCity = await Event.find({ city: city });
-        // If there are events in the city, return an object with city and events
-        return eventsInCity.length > 0 ? { city, events: eventsInCity } : null;
-      })
+        console.log("\n\n > Reporting...\n");
+            const dashes = '-'.repeat(120);
+            console.log(('G no.').padStart(9) + '|'+('City ').padStart(26) +'|' + ('user._id ').padStart(26) +'|'+ ('firstname').padStart(13) + ' |'+('lastname').padStart(13) +' |   user.events ' );
+            console.log(dashes);
 
-    );
-
-    // Filter out any null values where no events were found
-    const filteredEvents = eventsInSameCities.filter(result => result !== null);
-    // Log the events found in each city to the console
-    filteredEvents.forEach(({ city, events }) => {
-      console.log(`Events found in city "${city}":`, events);
-    });
-
-        console.log('Users found with the same firstname:', usersWithSameFirstnameAndCity);
-        res.status(300).json({usersWithSameFirstnameAndCity });      
-        /******************** STEP 2 - Save all those users in a new group on the DB ******************/
+          try {
+            let GroupNum = 0;
+            for (let group of usersWithSameFirstnameAndCity) {
+              const { groupedUsers, events } = group;
+              for (let subgroup of groupedUsers) {
+                let headerBool = false;
+                GroupNum = GroupNum+1;
+                for (let user of subgroup) {
+                  group_num = GroupNum.toString();
+                  group_num_text = 'G no. '+ group_num.padStart(2)
+                  await User.findByIdAndUpdate(user._id, { $set: { events: events.map(event => event._id) } });
+                  console.log(group_num_text + ' | ' + user.city + ' | ' + user._id + ' |' + user.firstname.padStart(13) +  ' |' + user.lastname.padStart(13) +  ' | '+  user.events  );
+                }
+                console.log(dashes);
+              }
+            }
+            console.log("\n > Users' events updated successfully.");
+          } catch (error) {
+            console.error("Error updating users' events:", error);
+          }
+            res.status(300).json({usersWithSameFirstnameAndCity });      
       } catch (error) {
           console.error('Error creating the group:', error);
           res.status(500).json({ message: 'Error creating group', error });
       }
     }
   };
-
 module.exports = groupController;
