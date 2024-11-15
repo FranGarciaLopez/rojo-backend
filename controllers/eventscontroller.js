@@ -13,15 +13,15 @@ cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
+});
 
-  const storage = multer.memoryStorage();
+const storage = multer.memoryStorage();
 
 
 const eventController = {
     async eventRegister(req, res) {
         try {
-            const { title, city, description, administrator, dateTime, location, category,photos } = req.body;
+            const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
 
             if (!Array.isArray(photos)) {
                 return res.status(400).json({ message: 'photoUrls must be an array of URLs' });
@@ -51,8 +51,8 @@ const eventController = {
                 await locationDocument.save();
             }
 
-           
-          
+
+
             const newEvent = new Event({
                 title,
                 city: cityDocument._id,
@@ -61,7 +61,7 @@ const eventController = {
                 dateTime: parsedDateTime,
                 location: null,
                 category: categoryDocument._id,
-                 photos,
+                photos,
                 createdAt: new Date().toISOString(),
                 modifiedAt: new Date().toISOString(),
                 deletedAt: null,
