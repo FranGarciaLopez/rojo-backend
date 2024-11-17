@@ -183,8 +183,13 @@ const userController = {
 
 
     const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'avatars' }, 
+       const stream = cloudinary.uploader.upload_stream(
+         {
+           folder: 'avatars',
+           transformation: [
+             { width: 200, height: 200, crop: "thumb", gravity: "auto" } // centering the image
+           ]
+         },
         (error, result) => {
           if (error) {
             console.error("Error uploading image to Cloudinary:", error);
