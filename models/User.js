@@ -7,6 +7,7 @@ const userSchema = new Schema({
   lastname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  avatar: {type:String, required:false},
   city: { type: mongoose.Schema.Types.ObjectId, ref: 'City', required: true },
   preferedCity: { type: mongoose.Schema.Types.ObjectId, ref: 'City' },
   categoryName: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },

@@ -1,7 +1,23 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const City = require('../models/City');
-const Category = require('../models/Category');  // Asegúrate de tener este modelo
+const Category = require('../models/Category'); 
+
+const cloudinary = require("cloudinary").v2;
+const uploadPhotos = require("../controllers/photosController"); 
+
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+
+
 
 const userController = {
 
@@ -150,6 +166,56 @@ const userController = {
                             status: "error",
                             message: "Error fetching users"
                      });
+              }
+       },
+       async  setavatar (req, res) {
+              try {
+                     console.log("Request File:", req.file);  
+
+    
+    const { userId } = req.body;
+    const avatar = req.file;
+
+   
+    if (!avatar || !userId) {
+      return res.status(400).json({ message: "Necessary parameters are missing" });
+    }
+
+
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'avatars' }, 
+        (error, result) => {
+          if (error) {
+            console.error("Error uploading image to Cloudinary:", error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
+
+   
+      stream.end(avatar.buffer);
+    });
+
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { avatar: result.secure_url },  
+      { new: true }
+    );
+
+
+    return res.status(200).json({
+      message: "Avatar uploaded successfully",
+      avatarUrl: result.secure_url,
+      user,
+    });
+    
+              } catch (error) {
+                console.error(error);
+                res.status(500).json({ message: "Error al subir el avatar" });
               }
        }
 };
