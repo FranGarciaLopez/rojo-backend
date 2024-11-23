@@ -11,7 +11,9 @@ usersRouter.post('/login', userController.userLogin);
 usersRouter.get('/user', validateToken, userController.getUser);
 usersRouter.get('/users', userController.getUsers);
 usersRouter.put('/update-preferences', validateToken, userController.updateUserPreferences);
-usersRouter.post('/upload',upload.single('avatar'), userController.setavatar);
+usersRouter.post('/upload', validateToken, upload.single('avatar'), userController.setAvatar);
+
+
 
 
 module.exports = usersRouter;

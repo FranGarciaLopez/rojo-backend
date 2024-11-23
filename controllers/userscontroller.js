@@ -4,7 +4,7 @@ const City = require('../models/City');
 const Category = require('../models/Category'); 
 
 const cloudinary = require("cloudinary").v2;
-const uploadPhotos = require("../controllers/photosController"); 
+
 
 
 cloudinary.config({
@@ -22,7 +22,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const userController = {
 
        async userRegister(req, res) {
-              const { firstname, lastname, email, password, city, dateOfBirth, categoryName, dayOfTheWeek } = req.body;
+              const { firstname, lastname, email, password, city, dateOfBirth, categoryName, dayOfTheWeek, avatar } = req.body;
 
               const userExists = await User.findOne({ email });
               if (userExists) {
@@ -44,6 +44,7 @@ const userController = {
                      lastname,
                      email,
                      password,
+                     avatar,
                      city: cityDocument._id,
                      dateOfBirth,
                      preferedCity: cityDocument._id,
@@ -118,7 +119,8 @@ const userController = {
                                    firstname: user.firstname,
                                    isAdministrator: user.isAdministrator,
                                    requiresOnboarding: user.requiresOnboarding,
-                                   userId: user._id
+                                   userId: user._id,
+                                   avatar: user.avatar
                             },
                             process.env.SECRET
                      );
@@ -157,9 +159,12 @@ const userController = {
                             .select('-password')
                             .populate('city categoryName preferedCity'); // Populate the correct paths
 
+                           
+
                      res.status(200).json({
                             status: "success",
-                            user
+                            user,
+                           
                      });
               } catch (error) {
                      return res.status(500).json({
@@ -168,61 +173,67 @@ const userController = {
                      });
               }
        },
-       async  setavatar (req, res) {
+       async setAvatar(req, res) {
               try {
-                     console.log("Request File:", req.file);  
-
-    
-    const { userId } = req.body;
-    const avatar = req.file;
-
-   
-    if (!avatar || !userId) {
-      return res.status(400).json({ message: "Necessary parameters are missing" });
-    }
-
-
-    const result = await new Promise((resolve, reject) => {
-       const stream = cloudinary.uploader.upload_stream(
-         {
-           folder: 'avatars',
-           transformation: [
-             { width: 200, height: 200, crop: "thumb", gravity: "auto" } // centering the image
-           ]
-         },
-        (error, result) => {
-          if (error) {
-            console.error("Error uploading image to Cloudinary:", error);
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      );
-
-   
-      stream.end(avatar.buffer);
-    });
-
-
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { avatar: result.secure_url },  
-      { new: true }
-    );
-
-
-    return res.status(200).json({
-      message: "Avatar uploaded successfully",
-      avatarUrl: result.secure_url,
-      user,
-    });
-    
+             
+                if (!req.file || !req.file.buffer) {
+                  return res.status(400).json({ message: "No file uploaded" });
+                }
+            
+                const avatar = req.file.buffer;
+                const { userId } = req.user; 
+            
+                console.log('User ID:', userId);
+            
+               
+                const result = await new Promise((resolve, reject) => {
+                  const stream = cloudinary.uploader.upload_stream(
+                    {
+                      folder: 'avatars',
+                      transformation: [
+                        {  crop: "thumb", gravity: "auto" }
+                      ],
+                    },
+                    (error, result) => {
+                      if (error) {
+                        reject(error);
+                      } else {
+                        resolve(result);
+                      }
+                    }
+                  );
+                  stream.end(avatar);                });
+            
+               
+                if (!result || !result.secure_url) {
+                  return res.status(500).json({ message: "Error uploading image to Cloudinary" });
+                }
+            
+               
+                const user = await User.findByIdAndUpdate(
+                  userId, 
+                  { avatar: result.secure_url }, 
+                  { new: true }
+                );
+            
+                if (!user) {
+                  return res.status(404).json({ message: "User not found" });
+                }
+            
+                // Enviar respuesta exitosa
+                return res.status(200).json({
+                  message: "Avatar uploaded successfully",
+                  avatarUrl: result.secure_url,
+                  userId,
+                });
+            
               } catch (error) {
-                console.error(error);
-                res.status(500).json({ message: "Error al subir el avatar" });
+                console.error('Error uploading avatar:', error);
+                return res.status(500).json({ message: "Error uploading avatar" });
               }
-       }
-};
+            }}
+       ;
+
+       
 
 module.exports = userController;

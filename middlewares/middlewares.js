@@ -14,7 +14,11 @@ const authMiddlewares = {
       const decoded = jwt.verify(token, process.env.SECRET);
 
       req.user = { ...decoded };
+      console.log(req.user);
       next();
+
+      console.log("decoded",decoded);
+      console.log("token",decoded);
 
     } catch (err) {
       console.log("Error validating token", err);
