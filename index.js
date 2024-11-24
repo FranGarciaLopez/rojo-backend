@@ -8,6 +8,7 @@ const citiesRouter = require("./routes/citiesRouter");
 const groupRouter = require("./routes/groupRouter");
 const photosRouter = require("./routes/photosRouter");
 const categoriesRouter = require("./routes/categoriesRouter");
+const blogRouter = require("./routes/blogsRouter");
 
 const cors = require('cors');
 
@@ -71,6 +72,7 @@ app.use('/cities', citiesRouter);
 app.use('/categories', categoriesRouter);
 app.use('/groups', groupRouter);
 app.use('/photos', photosRouter);
+app.use('/blogs', blogRouter);
 
 // SERVER -------------------------
 app.listen(port, () => {
