@@ -20,7 +20,7 @@ const blogController ={
     async blogRegister (req, res){
         const {title, description, user, photo}= req.body;
 
-        let userDocument = await User.findOne({name: user._id});
+        let userDocument = await User.findOne({name:user._id});
         if(!userDocument){
             return res.status(400).json({message: 'User does not exist'});
         }
@@ -50,7 +50,7 @@ const blogController ={
     async getBlogs (req, res){
         try {
             const blogs = await Blog.find()
-                  .populate('user', 'avatar name'); // Populate the correct paths
+                  .populate('user', 'avatar firstname lastname '); // Populate the correct paths
 
             res.status(200).json({
                    status: "success",

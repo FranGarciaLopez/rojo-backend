@@ -17,6 +17,8 @@ const authMiddlewares = {
       console.log(req.user);
       next();
 
+      console.log("token", token);
+
       console.log("decoded",decoded);
       console.log("token",decoded);
 
