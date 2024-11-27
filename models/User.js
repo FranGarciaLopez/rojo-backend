@@ -15,6 +15,7 @@ const userSchema = new Schema({
   isAdministrator: { type: Boolean, default: false },
   requiresOnboarding: { type: Boolean, default: true },
   organizedEvents: { type: Number, default: 0 },
+  interestedEvents: { type: Number, default: 0 },
   joinedEvents: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now },
   modifiedAt: { type: Date, default: Date.now },
