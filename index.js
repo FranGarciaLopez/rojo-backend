@@ -1,78 +1,65 @@
-// IMPORTING ----------------------
+// server.js
 const express = require('express');
-const dotenv = require("dotenv");
-const usersRouter = require("./routes/usersRouter");
-const eventsRouter = require("./routes/eventsRouter");
-const citiesRouter = require("./routes/citiesRouter");
-
-const groupRouter = require("./routes/groupRouter");
-const photosRouter = require("./routes/photosRouter");
-const categoriesRouter = require("./routes/categoriesRouter");
-
+const dotenv = require('dotenv');
 const cors = require('cors');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const usersRouter = require('./routes/usersRouter');
+const eventsRouter = require('./routes/eventsRouter');
+const citiesRouter = require('./routes/citiesRouter');
+const categoriesRouter = require('./routes/categoriesRouter');
+const groupRouter = require('./routes/groupRouter');
+const photosRouter = require('./routes/photosRouter');
 
+// Load environment variables
+dotenv.config();
+
+// Initialize the app
 const app = express();
-
-multer = require("multer");
-const upload = multer({dest:"uploads/"});
-const cloudinary = require("cloudinary").v2;
-
-
 app.use(express.json());
 
-require('dotenv').config();
-
+// Set up Cloudinary
 cloudinary.config({
-    cloud_name:process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
-// CORS -----------------------------
+// CORS configuration
 app.use(cors({
   origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true,
 }));
 
-const port = 3000;
+// Multer configuration
+const upload = multer({ dest: 'uploads/' });
 
-// DB SETTING --------------------
-dotenv.config();
-
-const mongoose = require("mongoose");
-const encodePassword = encodeURIComponent(process.env.DB_PASSWORD);
-
-const mongoDB =
-  "mongodb+srv://" +
-  process.env.DB_USER +
-  ":" +
-  encodePassword +
-  "@" +
-  process.env.DB_SERVER +
-  "/" +
-  process.env.DB_NAME +
-  "?retryWrites=true&w=majority";
+// Database connection
+const mongoDB = `mongodb+srv://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASSWORD)}@${process.env.DB_SERVER}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 async function main() {
   try {
-    await mongoose.connect(mongoDB);
+    await mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
+    console.log('Database connected successfully');
   } catch (err) {
-    console.log(err);
+    console.error('Database connection error:', err);
   }
 }
-main().catch((err) => console.log(err));
+main();
 
-// ROUTES -------------------------
+// Routes
 app.use('/', usersRouter);
 app.use('/events', eventsRouter);
 app.use('/cities', citiesRouter);
 app.use('/categories', categoriesRouter);
 app.use('/groups', groupRouter);
 app.use('/photos', photosRouter);
+app.use('/forgotpassword', usersRouter);
 
-// SERVER -------------------------
+// Start the server
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

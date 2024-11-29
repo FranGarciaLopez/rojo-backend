@@ -2,8 +2,11 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const City = require('../models/City');
 const Category = require('../models/Category');
+const dotenv = require('dotenv');
+const nodemailer = require('nodemailer');
 
 const userController = {
+
        async userRegister(req, res) {
               try {
                      const { firstname, lastname, email, password, city, dateOfBirth } = req.body;
@@ -156,6 +159,51 @@ const userController = {
               } catch (error) {
                      console.error('Error fetching user:', error);
                      res.status(500).json({ message: 'Error fetching user' });
+              }
+       },
+
+       async forgotPassword(req, res) {
+              const transporter = nodemailer.createTransport({
+                     service: process.env.EMAIL_SERVICE,
+                     host: process.env.SMTP_HOST,
+                     port: process.env.SMTP_PORT, // e.g., 587 for TLS, 465 for SSL, or 25 for non-secure
+                     secure: process.env.SMTP_SECURE === 'true', // true for SSL, false for TLS
+                     auth: {
+                         user: process.env.EMAIL_USER, // Your email address
+                         pass: process.env.EMAIL_PASS, // Your email password or app-specific password
+                     },
+                 });
+
+              try {
+                     const { email } = req.body;
+                     const user = await User.findOne({ email });
+
+                     if (!user) {
+                            return res.status(404).json({ message: 'Email not found' });
+                     }
+
+                     // Create a password reset token
+                     const resetToken = jwt.sign(
+                            { email: user.email },
+                            process.env.SECRET,
+                            { expiresIn: '1h' }
+                     );
+
+                     // Create a password reset link
+                     const resetLink = `${process.env.FRONTEND_URL}/resetpassword/${resetToken}`;
+                     // Send password reset email
+                     await transporter.sendMail({
+                            from: process.env.EMAIL_USER,
+                            to: email,
+                            subject: 'Password Reset',
+                            html: `<p>Click <a href="${resetLink}">here</a> to reset your password</p>`,
+                     });
+
+                     // Ideally, store the reset token in the database with an expiration
+                     res.status(200).json({ message: 'Password reset link sent' });
+              } catch (error) {
+                     console.error('Error during password reset request:', error);
+                     res.status(500).json({ message: 'An error occurred while processing the password reset' });
               }
        },
 };

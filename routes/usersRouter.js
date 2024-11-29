@@ -10,5 +10,5 @@ usersRouter.post('/login', userController.userLogin);
 usersRouter.get('/user', validateToken, userController.getUser);
 usersRouter.get('/users', userController.getUsers);
 usersRouter.put('/update-preferences', validateToken, userController.updateUserPreferences);
-
+usersRouter.put('/forgotpassword', userController.forgotPassword);
 module.exports = usersRouter;
