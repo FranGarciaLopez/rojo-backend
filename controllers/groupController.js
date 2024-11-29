@@ -3,124 +3,197 @@ const City = require('../models/City');
 const Group = require('../models/Group');
 const User = require('../models/User');
 const Event = require('../models/Event');
+const mongoose = require("mongoose");
+
+async function saveGroups(eventGroups) {
+  try {
+    // Iterate through the groups and save them to the database
+    for (const group of eventGroups) {
+      // Create a new group document for each event
+      const newGroup = new Group({
+        Users: group.users.map(userId => new mongoose.Types.ObjectId(userId)),  // Map each userId to an ObjectId
+        interestedEvents: group.eventId.map(eventId => new mongoose.Types.ObjectId(eventId)) // Map each eventId to an ObjectId
+      });
+      const dashes0 = '-'.repeat(60);
+      // Save the group to the database
+      await newGroup.save();
+      //console.log(`Group for event ${group.eventId} `)
+      console.log(dashes0)
+      console.log(`Group for event ${group.eventId} saved successfully.`);
+      console.log(`  Group ID: ${newGroup._id}`); // Print the group ID
+      group.users.forEach(userId => {
+        console.log(`\t User: ${userId}`);
+      }); 
+       }
+  } catch (error) {
+    console.error("Error saving groups:", error);
+  }
+}
+
+function shuffleArray(array) {
+  // Fisher-Yates (Knuth) shuffle
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1)); // Random index
+    // Swap elements at indices i and j
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function chunkArray(array, chunkSize) {
+  const result = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    result.push(array.slice(i, i + chunkSize));
+  }
+  return result;
+}
 
 const groupController = {
-    async show(req, res) {
-        try {
-          const textback = "Here the code to receive the group";
-          console.log(textback);
-          res.status(200).json({textback});
-        } catch (error) {
-            console.error('Error getting the group:', error);
-            res.status(500).json({ message: 'Error getting group', error });
-        }
-    },
-    async create(req, res) {
-      process.stdout.write('\x1Bc'); // clear the terminal
-      console.log(" > Starting Aggregation Pipeline (6steps)");
+  /************************************************/ 
+    async eraseall(req, res) { 
       try {
-        const usersWithSameFirstnameAndCity = await User.aggregate([
-          { // Step 1: Group users by 'firstname' and 'city'
-            $group: { 
-              _id: { firstname: "$firstname", city: "$city" },
-              count: { $sum: 1 },
-              users: { $push: "$$ROOT" }  
-            } 
+        // Delete all documen ts in the Group collection
+        console.log('+'.repeat(60));
+        console.log("\n > Result of POST/GROUP/ERASEALL ");
+        console.log(`\n > > All Groups will be erased from the DB \n`);
+        console.log('+'.repeat(60));
+
+        const result = await Group.deleteMany({});
+        text_back = result.deletedCount + 'documents deleted successfully.'
+        console.log(`\n ${result.deletedCount} documents deleted successfully. \n`);
+        console.log('-'.repeat(60));
+
+        res.status(200).json({text_back});
+
+      } catch (error) {
+        console.error("Error deleting groups:", error);
+        res.status(500).json({ message: 'Error getting group', error });
+      }
+    },
+  /************************************************/
+    async showall(req, res){
+    try {
+      // Fetch all groups from the database
+      const groups = await Group.find().populate('Users', '_id').exec();
+      // Log each group in the terminal
+
+      console.log('+'.repeat(60));
+      console.log("\n > Result of GET/GROUP/SHOWALL ");
+      console.log(`\n > > All Groups available will follow \n`);
+      console.log('+'.repeat(60));
+
+      groups.forEach((group, index) => {
+        console.log(`Group ${index + 1}:`);
+        console.log(`  Group ID: ${group._id}`); // Print the group ID
+        console.log(`  Interested Events: ${group.interestedEvents}`);
+        console.log(`  Users:`);
+        group.Users.forEach(user => {
+          console.log(`    - ${user._id}`);
+        });
+        console.log('-'.repeat(60));
+      });
+  
+      // Send all groups as JSON response
+      res.status(200).json(groups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+
+    /************************************************/
+    async findgroup(req, res) { 
+      try {
+          const { userId } = req.body; // Extract userId from the request body
+          if (!userId) {
+            return res.status(400).json({ error: "User ID is required." });
+          }
+          // Convert the userId to ObjectId
+          const userObjectId = new mongoose.Types.ObjectId(userId);
+          // Query the Group collection for groups containing the user
+          const groups = await Group.find({ Users: userObjectId });
+          console.log('+'.repeat(60));
+          console.log("\n > Result of POST/GROUP/FINDGROUP ");
+          console.log(`\n > > All Groups of ${userObjectId} will follow \n`);
+          console.log('+'.repeat(60));
+
+          groups.forEach((group, index) => {
+            console.log(`Group ${index + 1}:`);
+            console.log(`  Group ID: ${group._id}`); // Print the group ID
+            console.log(`  Interested Events: ${group.interestedEvents}`);
+            console.log(`  Users:`);
+            group.Users.forEach(user => {
+              console.log(`    - ${user._id}`);
+            });
+            console.log('-'.repeat(60));
+          });
+
+          
+          //  console.log(groups);
+            res.status(200).json({groups});
+      } catch (error) {
+        console.error("Error finding groups for user:", error);
+        return res.status(500).json({ error: "Internal Server Error." });
+      }
+    },
+    //******************************************** */
+    async create(req, res) {
+      //process.stdout.write('\x1Bc');
+      try {
+        console.log('+'.repeat(60));
+        console.log(" > Result of POST/GROUP/CREATE ");
+        console.log(` > > New groups will be created and uploaded on the DB`);
+        console.log('+'.repeat(60));
+        // * QUERY ************************************************************************
+        const usersByInterest = await User.aggregate([
+          {
+            $group: {
+              _id: "$interestedEvents", // Group by interestedEvents
+              users: { $push: "$_id" },  // Collect user IDs
+            },
           },
-          { // Step 2: Filter the groups to keep only those with more than 2 users
-            $match: { 
-              count: { $gt: 2 } 
-            } 
-          },
-          { // Step 3: Shuffle the users in each group by adding a random value to each user
-            $addFields: {
-              users: { 
-                $map: {
-                  input: "$users",  
-                  as: "user",
-                  in: {
-                    $mergeObjects: [
-                      "$$user", 
-                      { rand: { $rand: {} } }  
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          { // Step 4: Sort users by the random value
-            $addFields: {
-              users: { 
-                $sortArray: { input: "$users", sortBy: { rand: 1 } }
-              }
-            }
-          },
-          { // Step 5: Group users into subgroups of 5
-            $project: { 
-              _id: 0,
-              firstname: "$_id.firstname",
-              city: "$_id.city",
-              groupedUsers: {
-                $map: {
-                  input: { $range: [0, { $ceil: { $divide: ["$count", 5] } }] },
-                  as: "index",
-                  in: { 
-                    $slice: ["$users", { $multiply: ["$$index", 5] }, 5]  
-                  }
-                }
-              }
-            }
-          },
-          { // Step 6: Lookup events based on the city
-            $lookup: {
-              from: "events",
-              localField: "city",
-              foreignField: "city",
-              as: "events"
-            }
-          },
-          { 
-            $project: { 
-              firstname: 1,
-              city: 1,
-              groupedUsers: 1,
-              events: 1
+          {
+            $match: {
+              _id: { $ne: null } // Exclude groups where '_id' (the interestedEvents) is null
             }
           }
         ]);
-        console.log(" > Computation Compelted...");
-        // Log the final result
-        console.log(' > Users with events:', usersWithSameFirstnameAndCity);
+        /**********************************************************************************/
+        // shuffle **************************************************************************
+        usersByInterest.forEach(event => {  shuffleArray(event.users); });
 
-        console.log("\n\n > Reporting...\n");
-            const dashes = '-'.repeat(120);
-            console.log(('G no.').padStart(9) + '|'+('City ').padStart(26) +'|' + ('user._id ').padStart(26) +'|'+ ('firstname').padStart(13) + ' |'+('lastname').padStart(13) +' |   user.events ' );
-            console.log(dashes);
-
-          try {
-            let GroupNum = 0;
-            for (let group of usersWithSameFirstnameAndCity) {
-              const { groupedUsers, events } = group;
-              for (let subgroup of groupedUsers) {
-                let headerBool = false;
-                GroupNum = GroupNum+1;
-                for (let user of subgroup) {
-                  group_num = GroupNum.toString();
-                  group_num_text = 'G no. '+ group_num.padStart(2)
-                  await User.findByIdAndUpdate(user._id, { $set: { events: events.map(event => event._id) } });
-                  console.log(group_num_text + ' | ' + user.city + ' | ' + user._id + ' |' + user.firstname.padStart(13) +  ' |' + user.lastname.padStart(13) +  ' | '+  user.events  );
-                }
-                console.log(dashes);
-              }
-            }
-            console.log("\n > Users' events updated successfully.");
-          } catch (error) {
-            console.error("Error updating users' events:", error);
-          }
-            res.status(300).json({usersWithSameFirstnameAndCity });      
+          const eventGroups = [];
+                // Iterate over each event to group its users ***************************/
+                usersByInterest.forEach(event => {
+                    // Chunk the users into groups of 5
+                    const userChunks = chunkArray(event.users, 5);
+                        // For each chunk, create an object with event id, group number, and users
+                        userChunks.forEach((chunk, index) => {
+                          eventGroups.push({
+                            eventId: event._id,          // Event ID
+                            groupNumber: index + 1,      // Group number (starting from 1)
+                            users: chunk,                // List of users in this group
+                          });
+                        });
+                 });
+                 /* Printing report *****************************************************/
+                console.log(' > Reporting created groups ');
+                console.log('-'.repeat(60));
+                console.log(' group.eventId | group.groupNumber |userId ');
+        console.log('-'.repeat(60));
+                  eventGroups.forEach(group => {
+                        group.users.forEach(user => {
+                          console.log(`${group.eventId} | ${group.groupNumber}| ${user}`);
+                      });
+                      console.log('-'.repeat(60));
+                    });
+                  /*********************************************************************/
+    console.log('\n > Saving groups on the DB \n ');
+    await saveGroups(eventGroups);
+    console.log('-'.repeat(60));
+     return res.status(404).json(eventGroups);
       } catch (error) {
-          console.error('Error creating the group:', error);
-          res.status(500).json({ message: 'Error creating group', error });
+        console.error("Error during aggregation:", error);
+        return res.status(500).json({ message: "Server error while processing users." });
       }
     }
   };

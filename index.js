@@ -1,6 +1,7 @@
 // server.js
 const express = require('express');
-const dotenv = require('dotenv');
+const dotenv = require("dotenv");
+
 const cors = require('cors');
 const mongoose = require('mongoose');
 const multer = require('multer');
@@ -57,11 +58,16 @@ app.use('/categories', categoriesRouter);
 app.use('/groups', groupRouter);
 app.use('/photos', photosRouter);
 app.use('/forgotpassword', usersRouter);
+app.use('/blogs', blogRouter);
 
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+
+
+
 
 module.exports = { app };

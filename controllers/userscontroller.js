@@ -5,9 +5,72 @@ const Category = require('../models/Category');
 const dotenv = require('dotenv');
 const nodemailer = require('nodemailer');
 
+
+const cloudinary = require("cloudinary").v2;
+
+
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+
 const userController = {
 
        async userRegister(req, res) {
+              const { firstname, lastname, email, password, city, dateOfBirth, categoryName, dayOfTheWeek, avatar } = req.body;
+
+              const userExists = await User.findOne({ email });
+              if (userExists) {
+                     return res.status(409).json({ message: 'User already exists' });
+              }
+
+              let cityDocument = await City.findOne({ name: city });
+              if (!cityDocument) {
+                     return res.status(400).json({ message: 'City does not exist' });
+              }
+
+              let categoryDocument = await Category.findOne({ categoryName: categoryName });
+              if (!categoryDocument) {
+                     return res.status(400).json({ message: 'Preferred activity does not exist' });
+              }
+
+              const newUser = new User({
+                     firstname,
+                     lastname,
+                     email,
+                     password,
+                     avatar,
+                     city: cityDocument._id,
+                     dateOfBirth,
+                     preferedCity: cityDocument._id,
+                     categoryName: categoryDocument._id,
+                     dayOfTheWeek,
+                     isAdmin: false,
+                     requiresOnboarding: true,
+                     organizedEvents: 0,
+                     joinedEvents: 0,
+                     modifiedAt: new Date().toISOString(),
+                     createdAt: new Date().toISOString(),
+                     deletedAt: null,
+              });
+
+              await newUser.save();
+              res.status(201).json({
+                     status: 'success',
+                     message: 'User created successfully'
+              });
+       },
+
+       async updateUserPreferences(req, res) {
+              const { city, categoryName, dayOfTheWeek } = req.body;
+              const userId = req.user.userId; // Extract userId from the decoded token
+
               try {
                      const { firstname, lastname, email, password, city, dateOfBirth } = req.body;
 
@@ -66,7 +129,8 @@ const userController = {
                                    firstname: user.firstname,
                                    isAdministrator: user.isAdministrator,
                                    requiresOnboarding: user.requiresOnboarding,
-                                   userId: user._id
+                                   userId: user._id,
+                                   avatar: user.avatar
                             },
                             process.env.SECRET
                      );
@@ -152,9 +216,12 @@ const userController = {
                             .select('-password')
                             .populate('city categoryName preferedCity');
 
+
+
                      res.status(200).json({
-                            status: 'success',
+                            status: "success",
                             user,
+
                      });
               } catch (error) {
                      console.error('Error fetching user:', error);
@@ -169,10 +236,10 @@ const userController = {
                      port: process.env.SMTP_PORT, // e.g., 587 for TLS, 465 for SSL, or 25 for non-secure
                      secure: process.env.SMTP_SECURE === 'true', // true for SSL, false for TLS
                      auth: {
-                         user: process.env.EMAIL_USER, // Your email address
-                         pass: process.env.EMAIL_PASS, // Your email password or app-specific password
+                            user: process.env.EMAIL_USER, // Your email address
+                            pass: process.env.EMAIL_PASS, // Your email password or app-specific password
                      },
-                 });
+              });
 
               try {
                      const { email } = req.body;
@@ -206,6 +273,69 @@ const userController = {
                      res.status(500).json({ message: 'An error occurred while processing the password reset' });
               }
        },
+
+       async setAvatar(req, res) {
+              try {
+
+                     if (!req.file || !req.file.buffer) {
+                            return res.status(400).json({ message: "No file uploaded" });
+                     }
+
+                     const avatar = req.file.buffer;
+                     const { userId } = req.user;
+
+                     console.log('User ID:', userId);
+
+
+                     const result = await new Promise((resolve, reject) => {
+                            const stream = cloudinary.uploader.upload_stream(
+                                   {
+                                          folder: 'avatars',
+                                          transformation: [
+                                                 { crop: "thumb", gravity: "auto" }
+                                          ],
+                                   },
+                                   (error, result) => {
+                                          if (error) {
+                                                 reject(error);
+                                          } else {
+                                                 resolve(result);
+                                          }
+                                   }
+                            );
+                            stream.end(avatar);
+                     });
+
+
+                     if (!result || !result.secure_url) {
+                            return res.status(500).json({ message: "Error uploading image to Cloudinary" });
+                     }
+
+
+                     const user = await User.findByIdAndUpdate(
+                            userId,
+                            { avatar: result.secure_url },
+                            { new: true }
+                     );
+
+                     if (!user) {
+                            return res.status(404).json({ message: "User not found" });
+                     }
+
+                     // Enviar respuesta exitosa
+                     return res.status(200).json({
+                            message: "Avatar uploaded successfully",
+                            avatarUrl: result.secure_url,
+                            userId,
+                     });
+
+              } catch (error) {
+                     console.error('Error uploading avatar:', error);
+                     return res.status(500).json({ message: "Error uploading avatar" });
+              }
+       },
 };
+
+
 
 module.exports = userController;
