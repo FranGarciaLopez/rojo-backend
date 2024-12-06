@@ -290,7 +290,75 @@ const userController = {
                 console.error('Error fetching user:', error);
                 res.status(500).json({ message: 'Internal server error' });
               }},
-            
+
+
+              async emailSubscribe(req, res) {
+                     const subscriptionHtml = `
+                       <!DOCTYPE html>
+                       <html lang="en">
+                       <head>
+                         <meta charset="UTF-8">
+                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                         <title>Subscription Confirmation</title>
+                       </head>
+                       <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f7f7f7; color: #333;">
+                         <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                           <div style="background-color: #4CAF50; color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                             <h1 style="margin: 0;">Thank You for Subscribing!</h1>
+                           </div>
+                           <div style="padding: 20px; text-align: center;">
+                             <h2 style="font-size: 1.5em; color: #4CAF50;">Welcome to Our Newsletter</h2>
+                             <p style="font-size: 1em; line-height: 1.6; color: #555555;">Hi there,</p>
+                             <p style="font-size: 1em; line-height: 1.6; color: #555555;">Thank you for subscribing to our newsletter! We're excited to have you on board. Now you're all set to receive the latest updates, tips, and exclusive offers directly in your inbox.</p>
+                             
+                             <p style="font-size: 1em; line-height: 1.6; color: #555555;">As a subscriber, here are a few things you can expect:</p>
+                             <ul style="text-align: left; margin: 0 auto; max-width: 350px; padding-left: 15px; font-size: 1em; line-height: 1.6; color: #555555;">
+                               <li><strong>Event Updates:</strong> Stay informed about the latest events happening on our website.</li>
+                               <li><strong>Exclusive Tips:</strong> Receive useful tips on how to make the most of your events experience.</li>
+                              
+                             </ul>
+                             
+                             <p style="font-size: 1em; line-height: 1.6; color: #555555;">We want to make sure you don't miss out on anything important! So be sure to check your inbox regularly for exciting updates.</p>
+                             
+                             <div style="background-color: #f1f1f1; color: #333; text-align: center; padding: 20px; font-size: 0.9em; border-radius: 0 0 8px 8px;">
+                               <p style="font-size: 0.9em;">If you have any questions or need help, feel free to <a href="mailto:support@example.com" style="color: #4CAF50;">contact us</a>.</p>
+                               <p style="font-size: 0.9em;">You're receiving this email because you subscribed to our newsletter. If you'd like to unsubscribe, click <a href="#" style="color: #4CAF50;">here</a>.</p>
+                             </div>
+                           </div>
+                         </div>
+                       </body>
+                       </html>
+                     `;
+                   
+                     const transporter = nodemailer.createTransport({
+                       service: process.env.EMAIL_SERVICE,
+                       host: process.env.SMTP_HOST,
+                       port: process.env.SMTP_PORT, // e.g., 587 for TLS, 465 for SSL, or 25 for non-secure
+                       secure: process.env.SMTP_SECURE === 'true', // true for SSL, false for TLS
+                       auth: {
+                         user: process.env.EMAIL_USER, // Your email address
+                         pass: process.env.EMAIL_PASS, // Your email password or app-specific password
+                       },
+                     });
+                   
+                     try {
+                       const { email } = req.body;
+                   
+                     
+                       await transporter.sendMail({
+                         from: process.env.EMAIL_USER,
+                         to: email,
+                         subject: 'Subscription Confirmation', // Asunto del correo
+                         html: subscriptionHtml, // El contenido HTML del correo
+                       });
+                   
+                       res.status(200).json({ message: 'Subscription confirmation email sent' });
+                     } catch (error) {
+                       console.error('Error during subscription request:', error);
+                       res.status(500).json({ message: 'An error occurred while processing the subscription email' });
+                     }
+                   },
+                   
 
        async setAvatar(req, res) {
               try {

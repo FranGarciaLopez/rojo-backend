@@ -14,6 +14,7 @@ usersRouter.put('/update-preferences', validateToken, userController.updateUserP
 usersRouter.put('/forgotpassword', userController.forgotPassword);
 usersRouter.post('/upload', validateToken, upload.single('avatar'), userController.setAvatar);
 usersRouter.get('/userbyid/:userId',validateToken, userController.getUserById);
+usersRouter.post('/subscription', userController.emailSubscribe );
 
 
 
