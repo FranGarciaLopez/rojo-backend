@@ -13,6 +13,8 @@ const userSchema = new Schema({
   categoryName: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
   groups: [{type: mongoose.Schema.Types.ObjectId, ref: 'Group'}],
   dayOfTheWeek: { type: String, default: 'Monday' },
+  subscription:{type: Boolean, default: false},
+
   isAdministrator: { type: Boolean, default: false },
   requiresOnboarding: { type: Boolean, default: true },
   suscription:{type:Boolean, default:false},
@@ -22,6 +24,7 @@ const userSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
   modifiedAt: { type: Date, default: Date.now },
   deletedAt: { type: Date, default: null },
+
 });
 
 module.exports = mongoose.model('User', userSchema);
