@@ -6,13 +6,15 @@ const Event = require('../models/Event');
 const mongoose = require("mongoose");
 
 async function saveGroups(eventGroups) {
+  
   try {
     // Iterate through the groups and save them to the database
     for (const group of eventGroups) {
       // Create a new group document for each event
       const newGroup = new Group({
         Users: group.users.map(userId => new mongoose.Types.ObjectId(userId)),  // Map each userId to an ObjectId
-        interestedEvents: group.eventId.map(eventId => new mongoose.Types.ObjectId(eventId)) // Map each eventId to an ObjectId
+        interestedEvents: group.eventId.map(eventId => new mongoose.Types.ObjectId(eventId)) ,// Map each eventId to an ObjectId
+        message: group.message.map(messageId => new mongoose.Types.ObjectId(messageId))
       });
       const dashes0 = '-'.repeat(60);
       // Save the group to the database
@@ -73,7 +75,7 @@ const groupController = {
     async showall(req, res){
     try {
       // Fetch all groups from the database
-      const groups = await Group.find().populate('Users', '_id').exec();
+      const groups = await Group.find().populate('Users', 'firstname lastname _id').exec();
       // Log each group in the terminal
 
       console.log('+'.repeat(60));
@@ -99,6 +101,48 @@ const groupController = {
       res.status(500).json({ error: "Internal server error" });
     }
   },
+
+  async addUserToGroup(req, res) {
+    try {
+      const { groupId } = req.body; // Obtiene el groupId desde el cuerpo de la solicitud
+  const userId = req.body; // Obtiene el userId del token decodificado (ya está en req.userId)
+
+  
+      // Validamos si los parámetros son válidos
+      if (!groupId || !userId) {
+        return res.status(400).json({ message: 'Group ID and User ID are required' });
+      }
+  
+      // Verificamos si el grupo existe
+      const group = await Group.findById(groupId);
+      if (!group) {
+        return res.status(404).json({ message: 'Group not found' });
+      }
+  
+      // Verificamos si el usuario existe
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Verificamos si el usuario ya está en el grupo
+      if (group.Users.includes(userId)) {
+        return res.status(400).json({ message: 'User is already in this group' });
+      }
+  
+      // Añadimos el usuario al grupo
+      group.Users.push(userId);
+      await group.save();
+  
+      // Enviamos la respuesta de éxito
+      res.status(200).json({ message: 'User added to group successfully', group });
+    } catch (error) {
+      console.error('Error adding user to group:', error);
+      res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+  },
+
+
 
     /************************************************/
     async findgroup(req, res) { 
@@ -195,6 +239,29 @@ const groupController = {
         console.error("Error during aggregation:", error);
         return res.status(500).json({ message: "Server error while processing users." });
       }
+    },
+
+    async findGroupbyid(req, res) {
+      try {
+        const { groupId } = req.params; 
+        if (!groupId) {
+          return res.status(400).json({ error: "Group ID is required." });
+        }
+    
+      
+        const group = await Group.findById(groupId).populate('messages'); 
+    
+        if (!group) {
+          return res.status(404).json({ error: "Group not found." });
+        }
+    
+       
+        res.status(200).json({ group });
+      } catch (error) {
+        console.error("Error finding group:", error);
+        return res.status(500).json({ error: "Internal Server Error." });
+      }
     }
+  
   };
 module.exports = groupController;

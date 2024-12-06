@@ -1,6 +1,14 @@
+// Server Socket.io messages
+const  {Server} = require('socket.io');
+const {createServer} = require ('http');
+
+
 // server.js
 const express = require('express');
 const dotenv = require("dotenv");
+
+
+
 
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -12,13 +20,85 @@ const citiesRouter = require('./routes/citiesRouter');
 const categoriesRouter = require('./routes/categoriesRouter');
 const groupRouter = require('./routes/groupRouter');
 const photosRouter = require('./routes/photosRouter');
+const blogRouter = require('./routes/blogsRouter');
+const Message = require('./models/Message');
+const Group = require('./models/Group');
+const User = require('./models/User');
+
+
+
 
 // Load environment variables
 dotenv.config();
 
 // Initialize the app
 const app = express();
+const server = createServer(app);
+
 app.use(express.json());
+
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173',  
+    methods: ['GET', 'POST'],       
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log(`Usuario conectado: ${socket.id}  `);
+
+  // Unirse a un grupo
+  socket.on('joinGroup', (groupId) => {
+    socket.join(groupId);
+    console.log(`Usuario ${socket.firstname}   se unió al grupo: ${groupId}`);
+  });
+
+
+
+  socket.on('sendMessage', async ({ groupId, userId, content }) => {
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        console.error('Usuario no encontrado');
+        return;
+      }
+  
+      const firstname = user.firstname;
+      console.log(firstname);
+  
+      const message = new Message({ group: groupId, author: userId, content });
+      await message.save();
+  
+      await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
+  
+      // Emitir el mensaje a todos los miembros del grupo
+      io.to(groupId).emit('receiveMessage', {
+        groupId,
+        author: firstname,
+        content,
+        timestamp: message.timestamp,
+      });
+  
+      // Emitir el mensaje al cliente que lo envió (opcional)
+      socket.emit('messageSent', {
+        groupId,
+        author: firstname,
+        content,
+        timestamp: message.timestamp,
+      });
+  
+      console.log('Mensaje enviado:', message);
+    } catch (err) {
+      console.error('Error enviando mensaje:', err);
+    }
+  });
+
+
+  socket.on('disconnect', () => {
+    console.log(`Usuario desconectado: ${socket.id}`);
+  });
+});
+
 
 // Set up Cloudinary
 cloudinary.config({
@@ -62,7 +142,7 @@ app.use('/blogs', blogRouter);
 
 // Start the server
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 

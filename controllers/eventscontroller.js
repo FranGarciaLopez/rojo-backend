@@ -3,6 +3,7 @@ const Event = require('../models/Event');
 const City = require('../models/City');
 const Category = require('../models/Category');
 const Location = require('../models/Location');
+const User = require('../models/User');
 const multer = require("multer");
 
 
@@ -76,6 +77,8 @@ const eventController = {
             });
         }
     },
+
+
 
 
     async getEvents(req, res) {
