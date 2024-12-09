@@ -11,7 +11,10 @@ usersRouter.post('/login', userController.userLogin);
 usersRouter.get('/user', validateToken, userController.getUser);
 usersRouter.get('/users', userController.getUsers);
 usersRouter.put('/update-preferences', validateToken, userController.updateUserPreferences);
+usersRouter.put('/forgotpassword', userController.forgotPassword);
 usersRouter.post('/upload', validateToken, upload.single('avatar'), userController.setAvatar);
+usersRouter.get('/userbyid/:userId',validateToken, userController.getUserById);
+usersRouter.post('/subscription', userController.emailSubscribe );
 
 
 

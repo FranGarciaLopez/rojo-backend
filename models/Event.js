@@ -12,9 +12,7 @@ const EventSchema = new Schema({
   location: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' },
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   photos: [{ type: String }] // array photos (url, path...)
+  
 });
 
 module.exports = mongoose.model("Event", EventSchema);
-
-
-

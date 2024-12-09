@@ -3,6 +3,7 @@ const Event = require('../models/Event');
 const City = require('../models/City');
 const Category = require('../models/Category');
 const Location = require('../models/Location');
+const User = require('../models/User');
 const multer = require("multer");
 
 
@@ -78,10 +79,13 @@ const eventController = {
     },
 
 
+
+
     async getEvents(req, res) {
         try {
             const events = await Event.find().populate('city').populate('administrator').populate('location').populate('category');
             res.status(200).json(events);
+            
         } catch (error) {
             console.error('Error getting events:', error);
             res.status(500).json({ message: 'Error getting events', error });
@@ -91,14 +95,19 @@ const eventController = {
     async getEvent(req, res) {
         try {
             const { id } = req.params;
-            const event = await Event.findById(id).populate('city').populate('administrator').populate('location').populate('category');
+            if (!id) {
+                return res.status(400).json({ message: 'Event ID is required' });
+            }
+            const event = await Event.findById(id)
+                .populate('city')
+                .populate('administrator')
+                .populate('location')
+                .populate('category');
             if (!event) {
                 return res.status(404).json({ message: 'Event not found' });
             }
             res.status(200).json(event);
-
         } catch (error) {
-            console.error('Error getting event:', error);
             res.status(500).json({ message: 'Error getting event', error });
         }
     }
