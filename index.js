@@ -121,7 +121,6 @@ const upload = multer({ dest: 'uploads/' });
 const mongoDB = `mongodb+srv://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASSWORD)}@${process.env.DB_SERVER}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 async function main() {
-<<<<<<< HEAD
   if (process.env.NODE_ENV !== 'test') { // Skip connection during tests
     try {
       await mongoose.connect(mongoDB);
@@ -129,13 +128,6 @@ async function main() {
     } catch (err) {
       console.log(err);
     }
-=======
-  try {
-    await mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
-    console.log('Database connected successfully');
-  } catch (err) {
-    console.error('Database connection error:', err);
->>>>>>> cf9635342ed222c0d4128f76203a2c2704dd4075
   }
 }
 main();
@@ -150,20 +142,12 @@ app.use('/photos', photosRouter);
 app.use('/forgotpassword', usersRouter);
 app.use('/blogs', blogRouter);
 
-<<<<<<< HEAD
 // SERVER -------------------------
 if (process.env.NODE_ENV !== 'test') { // Skip connection during tests
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
 }
-=======
-// Start the server
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
->>>>>>> cf9635342ed222c0d4128f76203a2c2704dd4075
 
 module.exports = app ;
 
