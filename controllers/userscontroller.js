@@ -342,22 +342,37 @@ const userController = {
                      });
                    
                      try {
-                       const { email } = req.body;
-                   
-                     
-                       await transporter.sendMail({
-                         from: process.env.EMAIL_USER,
-                         to: email,
-                         subject: 'Subscription Confirmation', // Asunto del correo
-                         html: subscriptionHtml, // El contenido HTML del correo
-                       });
-                   
-                       res.status(200).json({ message: 'Subscription confirmation email sent' });
-                     } catch (error) {
-                       console.error('Error during subscription request:', error);
-                       res.status(500).json({ message: 'An error occurred while processing the subscription email' });
-                     }
-                   },
+                            const { email } = req.body;
+                            
+                           
+                            const user = await User.findOne({ email });
+                        
+                            if (user && user.subscription === true) {
+                            
+                              return res.status(400).json({ message: 'You are already subscribed to the newsletter' });
+                            }
+                        
+                            
+                            await transporter.sendMail({
+                              from: process.env.EMAIL_USER,
+                              to: email,
+                              subject: 'Subscription Confirmation', 
+                              html: subscriptionHtml,
+                            });
+                        
+                          
+                            if (user) {
+                              user.subscription = true;
+                              await user.save(); 
+                            }
+                        
+                            res.status(200).json({ message: 'Subscription confirmation email sent' });
+                        
+                          } catch (error) {
+                            console.error('Error during subscription request:', error);
+                            res.status(500).json({ message: 'An error occurred while processing the subscription email' });
+                          }
+                        },
                    
 
        async setAvatar(req, res) {

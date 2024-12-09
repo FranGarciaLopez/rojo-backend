@@ -14,7 +14,6 @@ const userSchema = new Schema({
   groups: [{type: mongoose.Schema.Types.ObjectId, ref: 'Group'}],
   dayOfTheWeek: { type: String, default: 'Monday' },
   subscription:{type: Boolean, default: false},
-
   isAdministrator: { type: Boolean, default: false },
   requiresOnboarding: { type: Boolean, default: true },
   suscription:{type:Boolean, default:false},
