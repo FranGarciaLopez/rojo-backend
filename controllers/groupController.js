@@ -190,7 +190,7 @@ const groupController = {
     console.log('\n > Saving groups on the DB \n ');
     await saveGroups(eventGroups);
     console.log('-'.repeat(60));
-     return res.status(404).json(eventGroups);
+     return res.status(200).json(eventGroups);
       } catch (error) {
         console.error("Error during aggregation:", error);
         return res.status(500).json({ message: "Server error while processing users." });

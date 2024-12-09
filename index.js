@@ -57,10 +57,13 @@ const mongoDB =
   "?retryWrites=true&w=majority";
 
 async function main() {
-  try {
-    await mongoose.connect(mongoDB);
-  } catch (err) {
-    console.log(err);
+  if (process.env.NODE_ENV !== 'test') { // Skip connection during tests
+    try {
+      await mongoose.connect(mongoDB);
+      
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
 main().catch((err) => console.log(err));
@@ -75,12 +78,12 @@ app.use('/photos', photosRouter);
 app.use('/blogs', blogRouter);
 
 // SERVER -------------------------
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+if (process.env.NODE_ENV !== 'test') { // Skip connection during tests
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
 
+module.exports = app ;
 
-
-
-
-module.exports = { app };
+//module.exports = { app };
