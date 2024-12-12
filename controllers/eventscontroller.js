@@ -2,6 +2,7 @@
 const Event = require('../models/Event');
 const City = require('../models/City');
 const Category = require('../models/Category');
+const User = require('../models/User');
 const Location = require('../models/Location');
 const multer = require("multer");
 
@@ -82,7 +83,7 @@ const eventController = {
         try {
             const events = await Event.find().populate('city').populate('administrator').populate('location').populate('category');
             res.status(200).json(events);
-            
+
         } catch (error) {
             console.error('Error getting events:', error);
             res.status(500).json({ message: 'Error getting events', error });
@@ -107,7 +108,46 @@ const eventController = {
         } catch (error) {
             res.status(500).json({ message: 'Error getting event', error });
         }
+    },
+    async signUpForEvent(req, res) {
+
+        try {
+            console.log('User ID from token:', req.user.userId);
+            console.log('Event ID from request body:', req.body.eventId);
+
+            const userId = req.user.userId; // Extracted from the token
+
+            const eventIdDocument = await Event.findById(req.body.eventId);
+            if (!eventIdDocument) {
+                return res.status(404).json({ message: 'Event not found.' });
+            }
+
+            if (!userId || !eventIdDocument) {
+                return res.status(400).json({ message: 'User ID and event ID are required.' });
+            }
+
+            const updatedUser = await User.findByIdAndUpdate(
+                userId,
+                {
+                    $addToSet: { interestedEvents: eventIdDocument._id }
+                },
+                { new: true }
+            );
+
+            console.log('Updated user:', updatedUser);
+
+            if (!updatedUser) {
+                return res.status(404).json({ message: 'User not found.' });
+            }
+
+            res.status(200).json({ message: 'Inscripción exitosa al evento.', user: updatedUser });
+        } catch (error) {
+            console.error('Error al inscribirse al evento:', error);
+            res.status(500).json({ error: 'Error al inscribirse al evento.' });
+        }
     }
+
+
 };
 
 module.exports = eventController;
