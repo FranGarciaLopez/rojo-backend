@@ -1,103 +1,48 @@
 const User = require('../models/User');
-const jwt = require('jsonwebtoken');
 const City = require('../models/City');
 const Category = require('../models/Category');
-const dotenv = require('dotenv');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-
-
 const cloudinary = require("cloudinary").v2;
 
-
-
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+       api_key: process.env.CLOUDINARY_API_KEY,
+       api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
-
-
 const userController = {
-
+       // Register a new user
        async userRegister(req, res) {
-              const { firstname, lastname, email, password, city, dateOfBirth, categoryName, dayOfTheWeek, avatar } = req.body;
-
-              const userExists = await User.findOne({ email });
-              if (userExists) {
-                     return res.status(409).json({ message: 'User already exists' });
-              }
-
-              let cityDocument = await City.findOne({ name: city });
-              if (!cityDocument) {
-                     return res.status(400).json({ message: 'City does not exist' });
-              }
-
-              let categoryDocument = await Category.findOne({ categoryName: categoryName });
-              if (!categoryDocument) {
-                     return res.status(400).json({ message: 'Preferred activity does not exist' });
-              }
-
-              const newUser = new User({
-                     firstname,
-                     lastname,
-                     email,
-                     password,
-                     avatar,
-                     city: cityDocument._id,
-                     dateOfBirth,
-                     preferedCity: cityDocument._id,
-                     categoryName: categoryDocument._id,
-                     dayOfTheWeek,
-                     isAdmin: false,
-                     requiresOnboarding: true,
-                     organizedEvents: 0,
-                     joinedEvents: 0,
-                     modifiedAt: new Date().toISOString(),
-                     createdAt: new Date().toISOString(),
-                     deletedAt: null,
-              });
-
-              await newUser.save();
-              res.status(201).json({
-                     status: 'success',
-                     message: 'User created successfully'
-              });
-       },
-
-       async updateUserPreferences(req, res) {
-              const { city, categoryName, dayOfTheWeek } = req.body;
-              const userId = req.user.userId; // Extract userId from the decoded token
-
               try {
                      const { firstname, lastname, email, password, city, dateOfBirth } = req.body;
 
-                     // Check if the user already exists
+                     // Check if user already exists
                      const userExists = await User.findOne({ email });
                      if (userExists) {
                             return res.status(409).json({ message: 'User already exists' });
                      }
 
-                     // Check if the city exists
+                     // Validate city
                      const cityDocument = await City.findOne({ name: city });
                      if (!cityDocument) {
                             return res.status(400).json({ message: 'City does not exist' });
                      }
 
-                     // Create new user
+
+                     // Hash the password
+                     const hashedPassword = await bcrypt.hash(password, 10);
+
+                     // Create a new user
                      const newUser = new User({
                             firstname,
                             lastname,
                             email,
-                            password: password,
+                            password: hashedPassword,
                             city: cityDocument._id,
                             dateOfBirth,
-                            preferedCity: cityDocument._id, // Default to registration city
-                            categoryName: null, // To be set during onboarding
-                            dayOfTheWeek: null, // To be set during onboarding
-                            isAdmin: false,
+                            isAdministrator: false,
                             requiresOnboarding: true,
                             organizedEvents: 0,
                             joinedEvents: 0,
@@ -108,21 +53,30 @@ const userController = {
 
                      await newUser.save();
 
-                     res.status(201).json({
-                            status: 'success',
-                            message: 'User created successfully',
-                     });
+                     res.status(201).json({ message: 'User created successfully' });
               } catch (error) {
                      console.error('Error during registration:', error);
-                     res.status(500).json({ message: 'Registration failed' });
+                     res.status(500).json({ message: 'An error occurred during registration' });
               }
        },
 
+       // User login
        async userLogin(req, res) {
-              const { email, password } = req.body;
-              const user = await User.findOne({ email });
+              try {
+                     const { email, password } = req.body;
 
-              if (user && user.password === password) {
+                     const user = await User.findOne({ email });
+                     if (!user) {
+                            return res.status(401).json({ message: "Invalid credentials" });
+                     }
+
+                     // Compare passwords
+                     const isPasswordValid = await bcrypt.compare(password, user.password);
+                     if (!isPasswordValid) {
+                            return res.status(401).json({ message: "Invalid credentials" });
+                     }
+
+                     // Generate JWT
                      const token = jwt.sign(
                             {
                                    email: user.email,
@@ -130,40 +84,42 @@ const userController = {
                                    isAdministrator: user.isAdministrator,
                                    requiresOnboarding: user.requiresOnboarding,
                                    userId: user._id,
-                                   avatar: user.avatar
+                                   avatar: user.avatar,
                             },
                             process.env.SECRET
                      );
 
-                     return res.status(200).json({
+                     res.status(200).json({
                             token,
                             message: 'Login successful',
                             isAdministrator: user.isAdministrator,
-                            requiresOnboarding: user.requiresOnboarding
+                            requiresOnboarding: user.requiresOnboarding,
                      });
+              } catch (error) {
+                     console.error('Error during login:', error);
+                     res.status(500).json({ message: 'An error occurred during login' });
               }
-              return res.status(401).json({ message: "Invalid credentials" });
        },
 
-
+       // Update user preferences
        async updateUserPreferences(req, res) {
               try {
                      const { city, categoryName, dayOfTheWeek } = req.body;
-                     const userId = req.user.userId; // Extract userId from the decoded token
+                     const userId = req.user.userId;
 
-                     // Check if the city exists
+                     // Validate city
                      const cityDocument = await City.findOne({ name: city });
                      if (!cityDocument) {
                             return res.status(400).json({ message: 'City does not exist' });
                      }
 
-                     // Check if the category exists
+                     // Validate category
                      const categoryDocument = await Category.findOne({ categoryName });
                      if (!categoryDocument) {
                             return res.status(400).json({ message: 'Preferred activity does not exist' });
                      }
 
-                     // Update the user's preferences
+                     // Update user
                      const updatedUser = await User.findByIdAndUpdate(
                             userId,
                             {
@@ -181,8 +137,7 @@ const userController = {
                      }
 
                      res.status(200).json({
-                            status: 'success',
-                            message: 'User preferences updated successfully, onboarding completed',
+                            message: 'User preferences updated successfully',
                             user: updatedUser,
                      });
               } catch (error) {
@@ -191,151 +146,124 @@ const userController = {
               }
        },
 
+       // Get all users
        async getUsers(req, res) {
               try {
                      const users = await User.find()
                             .select('-password')
                             .populate('city categoryName preferedCity');
 
-                     res.status(200).json({
-                            status: 'success',
-                            users,
-                     });
+                     res.status(200).json({ users });
               } catch (error) {
                      console.error('Error fetching users:', error);
                      res.status(500).json({ message: 'Error fetching users' });
               }
        },
 
+       // Get the logged-in user
        async getUser(req, res) {
               try {
-                     const user = await User.findOne({
-                            firstname: req.user.firstname,
-                            email: req.user.email,
-                     })
+                     const user = await User.findById(req.user.userId)
                             .select('-password')
                             .populate('city categoryName preferedCity');
 
+                     if (!user) {
+                            return res.status(404).json({ message: 'User not found' });
+                     }
 
-
-                     res.status(200).json({
-                            status: "success",
-                            user,
-
-                     });
+                     res.status(200).json({ user });
               } catch (error) {
                      console.error('Error fetching user:', error);
                      res.status(500).json({ message: 'Error fetching user' });
               }
        },
 
+       // Forgot password
        async forgotPassword(req, res) {
-              const transporter = nodemailer.createTransport({
-                     service: process.env.EMAIL_SERVICE,
-                     host: process.env.SMTP_HOST,
-                     port: process.env.SMTP_PORT, // e.g., 587 for TLS, 465 for SSL, or 25 for non-secure
-                     secure: process.env.SMTP_SECURE === 'true', // true for SSL, false for TLS
-                     auth: {
-                            user: process.env.EMAIL_USER, // Your email address
-                            pass: process.env.EMAIL_PASS, // Your email password or app-specific password
-                     },
-              });
-
               try {
                      const { email } = req.body;
-                     const user = await User.findOne({ email });
 
+                     const user = await User.findOne({ email });
                      if (!user) {
                             return res.status(404).json({ message: 'Email not found' });
                      }
 
-                     // Create a password reset token
                      const resetToken = jwt.sign(
                             { email: user.email },
                             process.env.SECRET,
                             { expiresIn: '1h' }
                      );
 
-                     // Create a password reset link
                      const resetLink = `${process.env.FRONTEND_URL}/resetpassword/${resetToken}`;
-                     // Send password reset email
+
+                     const transporter = nodemailer.createTransport({
+                            service: process.env.EMAIL_SERVICE,
+                            auth: {
+                                   user: process.env.EMAIL_USER,
+                                   pass: process.env.EMAIL_PASS,
+                            },
+                     });
+
                      await transporter.sendMail({
                             from: process.env.EMAIL_USER,
                             to: email,
                             subject: 'Password Reset',
-                            html: `<p>Click <a href="${resetLink}">here</a> to reset your password</p>`,
+                            html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
                      });
 
-                     // Ideally, store the reset token in the database with an expiration
                      res.status(200).json({ message: 'Password reset link sent' });
               } catch (error) {
-                     console.error('Error during password reset request:', error);
-                     res.status(500).json({ message: 'An error occurred while processing the password reset' });
+                     console.error('Error during password reset:', error);
+                     res.status(500).json({ message: 'Error processing password reset' });
               }
        },
 
        async setAvatar(req, res) {
               try {
-
                      if (!req.file || !req.file.buffer) {
                             return res.status(400).json({ message: "No file uploaded" });
                      }
 
-                     const avatar = req.file.buffer;
-                     const { userId } = req.user;
+                     const { userId } = req.user; // Extract the userId from the token
+                     const avatarBuffer = req.file.buffer;
 
-                     console.log('User ID:', userId);
-
-
+                     // Upload avatar to Cloudinary
                      const result = await new Promise((resolve, reject) => {
                             const stream = cloudinary.uploader.upload_stream(
                                    {
                                           folder: 'avatars',
-                                          transformation: [
-                                                 { crop: "thumb", gravity: "auto" }
-                                          ],
+                                          format: 'jpg',
+                                          transformation: [{ width: 300, height: 300, crop: "fill" }],
                                    },
                                    (error, result) => {
-                                          if (error) {
-                                                 reject(error);
-                                          } else {
-                                                 resolve(result);
-                                          }
+                                          if (error) reject(error);
+                                          else resolve(result);
                                    }
                             );
-                            stream.end(avatar);
+                            stream.end(avatarBuffer);
                      });
 
-
-                     if (!result || !result.secure_url) {
-                            return res.status(500).json({ message: "Error uploading image to Cloudinary" });
-                     }
-
-
-                     const user = await User.findByIdAndUpdate(
+                     // Update the user's avatar URL in the database
+                     const updatedUser = await User.findByIdAndUpdate(
                             userId,
                             { avatar: result.secure_url },
                             { new: true }
                      );
 
-                     if (!user) {
+                     if (!updatedUser) {
                             return res.status(404).json({ message: "User not found" });
                      }
 
-                     // Enviar respuesta exitosa
-                     return res.status(200).json({
+                     res.status(200).json({
                             message: "Avatar uploaded successfully",
                             avatarUrl: result.secure_url,
-                            userId,
+                            user: updatedUser,
                      });
-
               } catch (error) {
-                     console.error('Error uploading avatar:', error);
-                     return res.status(500).json({ message: "Error uploading avatar" });
+                     console.error("Error uploading avatar:", error);
+                     res.status(500).json({ message: "Error uploading avatar" });
               }
        },
 };
-
-
 
 module.exports = userController;
