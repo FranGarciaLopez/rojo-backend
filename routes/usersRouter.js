@@ -16,7 +16,4 @@ usersRouter.post('/upload', validateToken, upload.single('avatar'), userControll
 usersRouter.get('/userbyid/:userId',validateToken, userController.getUserById);
 usersRouter.post('/subscription', userController.emailSubscribe );
 
-
-
-
 module.exports = usersRouter;

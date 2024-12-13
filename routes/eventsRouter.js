@@ -14,7 +14,4 @@ eventsRouter.get('/events', eventController.getEvents);
 eventsRouter.get('/events/:id', eventController.getEvent);
 eventsRouter.post('/signup', middlewares.validateToken, eventController.signUpForEvent);
 
-
-
-
 module.exports = eventsRouter;

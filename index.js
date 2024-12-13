@@ -35,42 +35,66 @@ const io = new Server(server, {
 });
 
 io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.id}`);
 
-    socket.on('joinGroup', (groupId) => {
+    // Join a group
+    socket.on('joinGroup', async (groupId) => {
         socket.join(groupId);
         console.log(`User joined group: ${groupId}`);
+
+        // Fetch chat history
+        try {
+            const group = await Group.findById(groupId).populate('messages');
+            if (group) {
+                socket.emit('chatHistory', group.messages);
+            }
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
+        }
+    });
+    // Leave a group
+    socket.on('leaveGroup', (groupId) => {
+        socket.leave(groupId);
+        console.log(`User left group: ${groupId}`);
     });
 
-    socket.on('sendMessage', async ({ groupId, userId, content }) => {
+    // Handle sending messages
+    socket.on('sendMessage', async ({ groupId, content, userId }, callback) => {
         try {
-            const user = await User.findById(userId);
-            if (!user) {
-                console.error('User not found');
-                return;
+            // Validate groupId and userId as ObjectId
+            if (!mongoose.Types.ObjectId.isValid(groupId)) {
+                return callback({ error: 'Invalid groupId.' });
+            }
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return callback({ error: 'Invalid userId.' });
             }
 
-            const message = new Message({ group: groupId, author: userId, content });
+            // Create a new message
+            const message = new Message({
+                group: new mongoose.Types.ObjectId(groupId),
+                author: new mongoose.Types.ObjectId(userId), // Ensure author is ObjectId
+                content,
+            });
             await message.save();
 
+            // Update the group's message list
             await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
 
+            // Emit the message to all users in the group
             io.to(groupId).emit('receiveMessage', {
                 groupId,
-                author: user.firstname,
+                sender: userId,
                 content,
                 timestamp: message.timestamp,
             });
 
-            console.log('Message sent:', message);
+            callback({ success: true });
         } catch (err) {
             console.error('Error sending message:', err);
+            callback({ error: 'Internal server error.' });
         }
     });
 
-    socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.id}`);
-    });
+   
 });
 
 cloudinary.config({
@@ -115,9 +139,9 @@ server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-cron.schedule('*/2 * * * *', () => {
-    console.log('Executing user grouping task every 2 minutes...');
-    groupController.createGroupsForEvents();
-});
+//cron.schedule('*/2 * * * *', () => {
+//  console.log('Executing user grouping task every 2 minutes...');
+//groupController.create();
+//;
 
 module.exports = { app };

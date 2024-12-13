@@ -4,7 +4,6 @@ const City = require('../models/City');
 const Category = require('../models/Category');
 const User = require('../models/User');
 const Location = require('../models/Location');
-const User = require('../models/User');
 const multer = require("multer");
 
 
@@ -137,7 +136,6 @@ const eventController = {
                 { new: true }
             );
 
-            console.log('Updated user:', updatedUser);
 
             if (!updatedUser) {
                 return res.status(404).json({ message: 'User not found.' });

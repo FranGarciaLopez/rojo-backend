@@ -1,17 +1,19 @@
 const express = require('express');
-const groupController = require('../controllers/groupController');
-const groupRouter = express.Router();
+
 const { validateToken } = require('../middlewares/middlewares');
+const groupController = require('../controllers/groupController');
+const { getUsers } = require('../controllers/userscontroller');
 
-// Routes for group operations
-groupRouter.post('/create', groupController.create);
-/* groupRouter.post('/eraseall', groupController.eraseAll); */
-/* groupRouter.post('/findgroup', groupController.findGroup); */
-/* groupRouter.get('/showall', groupController.showAll); */
-/* groupRouter.post('/adduser-group', validateToken, groupController.addUserToGroup);
-groupRouter.get('/findgroupbyid/:id', groupController.findGroupById); */
+const groupRouter = express.Router();
 
-groupRouter.post('/:groupId/message', validateToken, groupController.sendMessage);
+groupRouter.post('/create', validateToken, groupController.create);
+groupRouter.post('/eraseall', validateToken, groupController.eraseAll);
+groupRouter.get('/showall', validateToken, groupController.showAll);
+groupRouter.post('/adduser', validateToken, groupController.addUserToGroup);
+groupRouter.get('/:groupId', validateToken, groupController.getGroupById);
 groupRouter.get('/:groupId/messages', validateToken, groupController.getMessages);
+groupRouter.post('/:groupId/message', validateToken, groupController.sendMessage);
+groupRouter.post('/findgroup', validateToken, groupController.findGroup);
+groupRouter.get('/findgroupbyid/:groupId', validateToken, groupController.findGroupById);
 
 module.exports = groupRouter;
