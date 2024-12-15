@@ -15,5 +15,6 @@ usersRouter.put('/forgotpassword', userController.forgotPassword);
 usersRouter.post('/upload', validateToken, upload.single('avatar'), userController.setAvatar);
 usersRouter.get('/userbyid/:userId',validateToken, userController.getUserById);
 usersRouter.post('/subscription', userController.emailSubscribe );
+usersRouter.delete('/delete',validateToken, userController.deleteUser );
 
 module.exports = usersRouter;

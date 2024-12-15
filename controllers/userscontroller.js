@@ -1,10 +1,12 @@
 const User = require('../models/User');
 const City = require('../models/City');
 const Category = require('../models/Category');
+const Group= require('../models/Group');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const cloudinary = require("cloudinary").v2;
+const Message = require('../models/Message');
 
 cloudinary.config({
        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -364,6 +366,54 @@ const userController = {
                      console.error("Error uploading avatar:", error);
                      res.status(500).json({ message: "Error uploading avatar" });
               }
+       },
+
+
+       async deleteUser(req, res){
+              try{
+
+                     const { userId } = req.user;
+                     console.log(userId);
+            
+                     
+                     const user = await User.findById(userId);
+
+                     if (!user) {
+                            return res.status(404).json({ message: 'User not found' });
+                          }
+
+                          console.log('User would be deleted:', userId);
+                          console.log('Simulated removal from groups and events');
+                          
+                  await User.findByIdAndDelete(userId);
+
+                  const messages = await Message.find({ author: userId });
+                  const messageIds = messages.map(msg => msg._id);
+                
+
+                
+                  await Group.updateMany(
+                     { messages: { $in: messageIds } },
+                     { $pull: { messages: { $in: messageIds } } }
+                   );
+                   await Group.updateMany({ Users: userId }, { $pull: { Users: userId } });
+
+                  return  res.status(200).json({ message: 'User and associated data deleted successfully' });
+                    
+                    
+
+
+
+       
+
+                     
+
+
+
+              }catch(error){
+                     res.status(500).json({message:"Error delete User"})
+              }
+
        },
 };
 
