@@ -146,7 +146,62 @@ const eventController = {
             console.error('Error al inscribirse al evento:', error);
             res.status(500).json({ error: 'Error al inscribirse al evento.' });
         }
-    }
+    },
+   
+        async EditEvent(req, res) {
+            const { eventId } = req.params;
+            const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
+        
+            try {
+                console.log('event id', eventId);
+        
+           
+                const event = await Event.findOne({ _id: eventId });
+        
+                if (!event) {
+                    return res.status(404).json({ message: 'Event not found' });
+                }
+     
+                if (event.photos && event.photos.length > 0) {
+                    for (let i = 0; i < event.photos.length; i++) {
+                        const photoUrl = event.photos[i];
+                        const publicId = photoUrl.split('/').pop().split('.')[0];
+                        await cloudinary.uploader.destroy(publicId);
+                    }
+                }
+        
+              
+                let uploadedPhotos = [];
+                if (photos && photos.length > 0) {
+                    for (let i = 0; i < photos.length; i++) {
+                        const result = await cloudinary.uploader.upload(photos[i], {
+                            folder: 'event_photos',
+                        });
+                        uploadedPhotos.push(result.secure_url);
+                    }
+                }
+        
+              
+                if (title) event.title = title;
+                if (city) event.city = city;
+                if (description) event.description = description;
+                if (administrator) event.administrator = administrator;
+                if (dateTime) event.dateTime = dateTime; 
+                if (location) event.location = location;
+                if (category) event.category = category;
+                if (uploadedPhotos.length > 0) event.photos = uploadedPhotos;
+        
+               
+                const updatedEvent = await event.save();
+        
+                return res.status(200).json(updatedEvent);
+        
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({ message: 'Server error', error: error.message });
+            }
+        }
+        
 
 
 };
