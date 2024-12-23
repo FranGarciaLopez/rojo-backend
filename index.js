@@ -43,7 +43,15 @@ io.on('connection', (socket) => {
 
         // Fetch chat history
         try {
-            const group = await Group.findById(groupId).populate('messages');
+            const group = await Group.findById(groupId)
+                .populate({
+                    path: 'messages',
+                    populate: {
+                        path: 'author', // Populate author details
+                        select: 'firstname lastname', // Select specific fields
+                    },
+                });
+
             if (group) {
                 socket.emit('chatHistory', group.messages);
             }
@@ -60,41 +68,45 @@ io.on('connection', (socket) => {
     // Handle sending messages
     socket.on('sendMessage', async ({ groupId, content, userId }, callback) => {
         try {
-            // Validate groupId and userId as ObjectId
             if (!mongoose.Types.ObjectId.isValid(groupId)) {
                 return callback({ error: 'Invalid groupId.' });
             }
             if (!mongoose.Types.ObjectId.isValid(userId)) {
                 return callback({ error: 'Invalid userId.' });
             }
-
+    
             // Create a new message
             const message = new Message({
                 group: new mongoose.Types.ObjectId(groupId),
-                author: new mongoose.Types.ObjectId(userId), // Ensure author is ObjectId
+                author: new mongoose.Types.ObjectId(userId),
                 content,
             });
             await message.save();
-
+    
+            // Populate the author details
+            const populatedMessage = await message.populate('author', 'firstname lastname');
+    
             // Update the group's message list
             await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
-
-            // Emit the message to all users in the group
+    
+            // Emit the message with populated author details
             io.to(groupId).emit('receiveMessage', {
                 groupId,
-                sender: userId,
-                content,
-                timestamp: message.timestamp,
+                sender: {
+                    _id: populatedMessage.author._id,
+                    firstname: populatedMessage.author.firstname,
+                    lastname: populatedMessage.author.lastname,
+                },
+                content: populatedMessage.content,
+                timestamp: populatedMessage.timestamp,
             });
-
+    
             callback({ success: true });
         } catch (err) {
             console.error('Error sending message:', err);
             callback({ error: 'Internal server error.' });
         }
     });
-
-   
 });
 
 cloudinary.config({
