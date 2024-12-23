@@ -40,10 +40,19 @@ io.on('connection', (socket) => {
     // Join a group
     socket.on('joinGroup', async (groupId) => {
         socket.join(groupId);
-
-        // Fetch chat history with author details
+        console.log(`User joined group: ${groupId}`);
+    
+        // Fetch chat history
         try {
-            const group = await Group.findById(groupId).populate('messages');
+            const group = await Group.findById(groupId)
+                .populate({
+                    path: 'messages',
+                    populate: {
+                        path: 'author', // Populate author details
+                        select: 'firstname lastname', // Select specific fields
+                    },
+                });
+    
             if (group) {
                 socket.emit('chatHistory', group.messages);
             }
