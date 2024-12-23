@@ -34,24 +34,16 @@ const io = new Server(server, {
     }
 });
 
+// Socket.IO configuration
 io.on('connection', (socket) => {
 
     // Join a group
     socket.on('joinGroup', async (groupId) => {
         socket.join(groupId);
-        console.log(`User joined group: ${groupId}`);
 
-        // Fetch chat history
+        // Fetch chat history with author details
         try {
-            const group = await Group.findById(groupId)
-                .populate({
-                    path: 'messages',
-                    populate: {
-                        path: 'author', // Populate author details
-                        select: 'firstname lastname', // Select specific fields
-                    },
-                });
-
+            const group = await Group.findById(groupId).populate('messages');
             if (group) {
                 socket.emit('chatHistory', group.messages);
             }
@@ -59,6 +51,7 @@ io.on('connection', (socket) => {
             console.error('Error fetching chat history:', error);
         }
     });
+
     // Leave a group
     socket.on('leaveGroup', (groupId) => {
         socket.leave(groupId);
@@ -72,6 +65,7 @@ io.on('connection', (socket) => {
                 return callback({ error: 'Invalid groupId.' });
             }
             if (!mongoose.Types.ObjectId.isValid(userId)) {
+                console.log('Invalid userId:', userId);
                 return callback({ error: 'Invalid userId.' });
             }
     
@@ -82,23 +76,16 @@ io.on('connection', (socket) => {
                 content,
             });
             await message.save();
-    
-            // Populate the author details
-            const populatedMessage = await message.populate('author', 'firstname lastname');
-    
+
             // Update the group's message list
             await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
-    
-            // Emit the message with populated author details
+
+            // Emit the message to all users in the group
             io.to(groupId).emit('receiveMessage', {
                 groupId,
-                sender: {
-                    _id: populatedMessage.author._id,
-                    firstname: populatedMessage.author.firstname,
-                    lastname: populatedMessage.author.lastname,
-                },
-                content: populatedMessage.content,
-                timestamp: populatedMessage.timestamp,
+                sender: userId,
+                content,
+                timestamp: message.timestamp,
             });
     
             callback({ success: true });
@@ -109,6 +96,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// Cloudinary configuration
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -123,6 +111,7 @@ app.use(cors({
 
 const upload = multer({ dest: 'uploads/' });
 
+// MongoDB connection
 const mongoDB = `mongodb+srv://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASSWORD)}@${process.env.DB_SERVER}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 async function main() {
@@ -137,6 +126,7 @@ async function main() {
 }
 main();
 
+// Routers
 app.use('/', usersRouter);
 app.use('/events', eventsRouter);
 app.use('/cities', citiesRouter);
@@ -151,9 +141,16 @@ server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-//cron.schedule('*/2 * * * *', () => {
-//  console.log('Executing user grouping task every 2 minutes...');
-//groupController.create();
-//;
+// Uncomment the cron job if needed
+// cron.schedule('*/2 * * * *', () => {
+//   console.log('Executing user grouping task every 2 minutes...');
+//   groupController.create();
+// });
+
+// Uncomment the cron job if needed
+// cron.schedule('*/4 * * * *', () => {
+//   console.log('Executing user grouping task every 2 minutes...');
+//   groupController.delete();
+// });
 
 module.exports = { app };
