@@ -9,8 +9,7 @@ const groupRouter = express.Router();
 groupRouter.post('/create', validateToken, groupController.create);
 groupRouter.post('/eraseall', validateToken, groupController.eraseAll);
 groupRouter.get('/showall', validateToken, groupController.showAll);
-groupRouter.post('/adduser', validateToken, groupController.addUserToGroup);
-groupRouter.get('/:groupId', validateToken, groupController.getGroupById);
+/* groupRouter.get('/:groupId', validateToken, groupController.getGroupById); */
 groupRouter.get('/:groupId/messages', validateToken, groupController.getMessages);
 groupRouter.post('/:groupId/message', validateToken, groupController.sendMessage);
 groupRouter.post('/findgroup', validateToken, groupController.findGroup);

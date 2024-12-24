@@ -19,6 +19,7 @@ const Message = require('./models/Message');
 const Group = require('./models/Group');
 const User = require('./models/User');
 const groupController = require('./controllers/groupController');
+const { send } = require('process');
 
 dotenv.config();
 
@@ -36,23 +37,24 @@ const io = new Server(server, {
 
 // Socket.IO configuration
 io.on('connection', (socket) => {
+    console.log(`Socket connected: ${socket.id}`);
 
     // Join a group
     socket.on('joinGroup', async (groupId) => {
         socket.join(groupId);
         console.log(`User joined group: ${groupId}`);
-    
+
         // Fetch chat history
         try {
             const group = await Group.findById(groupId)
                 .populate({
                     path: 'messages',
                     populate: {
-                        path: 'author', // Populate author details
-                        select: 'firstname lastname', // Select specific fields
+                        path: 'author',
+                        select: 'firstname lastname',
                     },
                 });
-    
+
             if (group) {
                 socket.emit('chatHistory', group.messages);
             }
@@ -85,16 +87,20 @@ io.on('connection', (socket) => {
                 content,
             });
             await message.save();
-
+    
+            // Populate the author details
+            const populatedMessage = await Message.findById(message._id).populate('author', 'firstname lastname');
+    
             // Update the group's message list
             await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
-
-            // Emit the message to all users in the group
+    
+            // Emit the populated message to all users in the group
             io.to(groupId).emit('receiveMessage', {
                 groupId,
-                sender: userId,
-                content,
-                timestamp: message.timestamp,
+                content: populatedMessage.content,
+                author: populatedMessage.author, 
+                timestamp: populatedMessage.timestamp,
+                sender: socket.id,
             });
     
             callback({ success: true });
@@ -159,7 +165,7 @@ server.listen(port, () => {
 // Uncomment the cron job if needed
 // cron.schedule('*/4 * * * *', () => {
 //   console.log('Executing user grouping task every 2 minutes...');
-//   groupController.delete();
+//   groupController.eraseAll();
 // });
 
 module.exports = { app };

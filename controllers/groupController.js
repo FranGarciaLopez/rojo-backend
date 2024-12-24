@@ -124,28 +124,6 @@ const groupController = {
         }
     },
 
-    async getGroupById(req, res) {
-        try {
-            const { groupId } = req.params;
-
-            // Validate and cast groupId to ObjectId
-            if (!mongoose.Types.ObjectId.isValid(groupId)) {
-                return res.status(400).json({ error: 'Invalid Group ID format.' });
-            }
-
-            const group = await Group.findById(groupId).populate('Users', 'firstname lastname');
-
-            if (!group) {
-                return res.status(404).json({ error: 'Group not found.' });
-            }
-
-            res.status(200).json(group);
-        } catch (error) {
-            console.error('Error fetching group:', error);
-            res.status(500).json({ error: 'Error fetching group.' });
-        }
-    },
-
     async sendMessage(req, res) {
         try {
             const { groupId } = req.params;
@@ -229,38 +207,6 @@ const groupController = {
         } catch (error) {
             console.error("Error fetching groups:", error);
             res.status(500).json({ error: "Internal server error" });
-        }
-    },
-
-    async addUserToGroup(req, res) {
-        try {
-            const { groupId, userId } = req.body;
-
-            if (!groupId || !userId) {
-                return res.status(400).json({ message: 'Group ID and User ID are required' });
-            }
-
-            const group = await Group.findById(groupId);
-            if (!group) {
-                return res.status(404).json({ message: 'Group not found' });
-            }
-
-            const user = await User.findById(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            if (group.Users.includes(userId)) {
-                return res.status(400).json({ message: 'User is already in this group' });
-            }
-
-            group.Users.push(userId);
-            await group.save();
-
-            res.status(200).json({ message: 'User added to group successfully', group });
-        } catch (error) {
-            console.error('Error adding user to group:', error);
-            res.status(500).json({ message: 'Internal server error', error: error.message });
         }
     },
 
