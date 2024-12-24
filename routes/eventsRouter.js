@@ -14,5 +14,6 @@ eventsRouter.get('/events', eventController.getEvents);
 eventsRouter.get('/events/:id', eventController.getEvent);
 eventsRouter.post('/signup', middlewares.validateToken, eventController.signUpForEvent);
 eventsRouter.patch('/editevent/:eventId', eventController.EditEvent);
+eventsRouter.delete('/eventdelete/:eventId', eventController.deleteEvent);
 
 module.exports = eventsRouter;

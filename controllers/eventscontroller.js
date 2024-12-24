@@ -200,6 +200,23 @@ const eventController = {
                 console.error(error);
                 return res.status(500).json({ message: 'Server error', error: error.message });
             }
+        },
+
+        async deleteEvent(req,res){
+            const eventId = req.params.eventId;
+
+           const event=  await Event.findById(eventId);
+
+           console.log('event', event);
+
+           if(!event){
+            return res.status(404).json({message:"Event not found"})
+           }
+
+
+           await Event.findByIdAndDelete(eventId);
+
+           return res.status(200).json({message:'Event deleted successfully'});
         }
         
 
