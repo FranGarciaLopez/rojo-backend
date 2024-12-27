@@ -4,7 +4,7 @@
   "description": "final-project-backend",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
+    "dev": "node index.js",
     "test": "test"
   },
   "author": "",
