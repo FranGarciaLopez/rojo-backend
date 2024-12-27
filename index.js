@@ -19,7 +19,6 @@ const Message = require('./models/Message');
 const Group = require('./models/Group');
 const User = require('./models/User');
 const groupController = require('./controllers/groupController');
-const { send } = require('process');
 
 dotenv.config();
 
@@ -30,14 +29,13 @@ app.use(express.json());
 
 const io = new Server(server, {
     cors: {
-        origin: ['http://localhost:5173','https://rojo-frontend.onrender.com'],
+        origin: ['http://localhost:5173', 'https://rojo-frontend.onrender.com'],
         methods: ['GET', 'POST'],
     }
 });
 
 // Socket.IO configuration
 io.on('connection', (socket) => {
-
     // Join a group
     socket.on('joinGroup', async (groupId) => {
         socket.join(groupId);
@@ -76,7 +74,7 @@ io.on('connection', (socket) => {
                 console.log('Invalid userId:', userId);
                 return callback({ error: 'Invalid userId.' });
             }
-    
+
             // Create a new message
             const message = new Message({
                 group: new mongoose.Types.ObjectId(groupId),
@@ -84,22 +82,22 @@ io.on('connection', (socket) => {
                 content,
             });
             await message.save();
-    
+
             // Populate the author details
             const populatedMessage = await Message.findById(message._id).populate('author', 'firstname lastname');
-    
+
             // Update the group's message list
             await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
-    
+
             // Emit the populated message to all users in the group
             io.to(groupId).emit('receiveMessage', {
                 groupId,
                 content: populatedMessage.content,
-                author: populatedMessage.author, 
+                author: populatedMessage.author,
                 timestamp: populatedMessage.timestamp,
                 sender: socket.id,
             });
-    
+
             callback({ success: true });
         } catch (err) {
             console.error('Error sending message:', err);
@@ -116,7 +114,7 @@ cloudinary.config({
 });
 
 app.use(cors({
-    origin: ['http://localhost:5173','https://rojo-frontend.onrender.com'],
+    origin: ['http://localhost:5173', 'https://rojo-frontend.onrender.com'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
 }));
@@ -161,7 +159,7 @@ server.listen(port, () => {
 
 // Uncomment the cron job if needed
 // cron.schedule('*/4 * * * *', () => {
-//   console.log('Executing user grouping task every 2 minutes...');
+//   console.log('Executing user grouping task every 4 minutes...');
 //   groupController.eraseAll();
 // });
 
