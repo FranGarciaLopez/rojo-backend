@@ -114,7 +114,7 @@ cloudinary.config({
 });
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://rojo-frontend.onrender.com'],
+    origin: ['http://localhost:5173', '0.0.0.0:$PORT'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
 }));
@@ -146,7 +146,7 @@ app.use('/photos', photosRouter);
 app.use('/forgotpassword', usersRouter);
 app.use('/blogs', blogRouter);
 
-const port = process.env.PORT || 10000;
+const port = process.env.PORT ||  `0.0.0.0:$PORT`;
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
