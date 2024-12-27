@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const City = require('../models/City');
 const Category = require('../models/Category');
-const Group= require('../models/Group');
+const Group = require('../models/Group');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -219,27 +219,28 @@ const userController = {
                      res.status(500).json({ message: 'Error processing password reset' });
               }
        },
-        async   getUserById(req, res)  {
+       async getUserById(req, res) {
               try {
                      const { userId } = req.params;// Obtener el userId desde los parámetros de la URL
-            
-                // Buscar el usuario por ID
-                const user = await User.findById(userId);
-                
-                if (!user) {
-                  return res.status(404).json({ message: 'User not found' });
-                }
-                
-                // Devolver todos los datos del usuario
-                return res.json(user);
+
+                     // Buscar el usuario por ID
+                     const user = await User.findById(userId);
+
+                     if (!user) {
+                            return res.status(404).json({ message: 'User not found' });
+                     }
+
+                     // Devolver todos los datos del usuario
+                     return res.json(user);
               } catch (error) {
-                console.error('Error fetching user:', error);
-                res.status(500).json({ message: 'Internal server error' });
-              }},
+                     console.error('Error fetching user:', error);
+                     res.status(500).json({ message: 'Internal server error' });
+              }
+       },
 
 
-              async emailSubscribe(req, res) {
-                     const subscriptionHtml = `
+       async emailSubscribe(req, res) {
+              const subscriptionHtml = `
                        <!DOCTYPE html>
                        <html lang="en">
                        <head>
@@ -275,51 +276,51 @@ const userController = {
                        </body>
                        </html>
                      `;
-                   
-                     const transporter = nodemailer.createTransport({
-                       service: process.env.EMAIL_SERVICE,
-                       host: process.env.SMTP_HOST,
-                       port: process.env.SMTP_PORT, // e.g., 587 for TLS, 465 for SSL, or 25 for non-secure
-                       secure: process.env.SMTP_SECURE === 'true', // true for SSL, false for TLS
-                       auth: {
-                         user: process.env.EMAIL_USER, // Your email address
-                         pass: process.env.EMAIL_PASS, // Your email password or app-specific password
-                       },
+
+              const transporter = nodemailer.createTransport({
+                     service: process.env.EMAIL_SERVICE,
+                     host: process.env.SMTP_HOST,
+                     port: process.env.SMTP_PORT, // e.g., 587 for TLS, 465 for SSL, or 25 for non-secure
+                     secure: process.env.SMTP_SECURE === 'true', // true for SSL, false for TLS
+                     auth: {
+                            user: process.env.EMAIL_USER, // Your email address
+                            pass: process.env.EMAIL_PASS, // Your email password or app-specific password
+                     },
+              });
+
+              try {
+                     const { email } = req.body;
+
+
+                     const user = await User.findOne({ email });
+
+                     if (user && user.subscription === true) {
+
+                            return res.status(400).json({ message: 'You are already subscribed to the newsletter' });
+                     }
+
+
+                     await transporter.sendMail({
+                            from: process.env.EMAIL_USER,
+                            to: email,
+                            subject: 'Subscription Confirmation',
+                            html: subscriptionHtml,
                      });
-                   
-                     try {
-                            const { email } = req.body;
-                            
-                           
-                            const user = await User.findOne({ email });
-                        
-                            if (user && user.subscription === true) {
-                            
-                              return res.status(400).json({ message: 'You are already subscribed to the newsletter' });
-                            }
-                        
-                            
-                            await transporter.sendMail({
-                              from: process.env.EMAIL_USER,
-                              to: email,
-                              subject: 'Subscription Confirmation', 
-                              html: subscriptionHtml,
-                            });
-                        
-                          
-                            if (user) {
-                              user.subscription = true;
-                              await user.save(); 
-                            }
-                        
-                            res.status(200).json({ message: 'Subscription confirmation email sent' });
-                        
-                          } catch (error) {
-                            console.error('Error during subscription request:', error);
-                            res.status(500).json({ message: 'An error occurred while processing the subscription email' });
-                          }
-                        },
-                   
+
+
+                     if (user) {
+                            user.subscription = true;
+                            await user.save();
+                     }
+
+                     res.status(200).json({ message: 'Subscription confirmation email sent' });
+
+              } catch (error) {
+                     console.error('Error during subscription request:', error);
+                     res.status(500).json({ message: 'An error occurred while processing the subscription email' });
+              }
+       },
+
 
        async setAvatar(req, res) {
               try {
@@ -369,49 +370,49 @@ const userController = {
        },
 
 
-       async deleteUser(req, res){
-              try{
+       async deleteUser(req, res) {
+              try {
 
                      const { userId } = req.user;
                      console.log(userId);
-            
-                     
+
+
                      const user = await User.findById(userId);
 
                      if (!user) {
                             return res.status(404).json({ message: 'User not found' });
-                          }
+                     }
 
-                          console.log('User would be deleted:', userId);
-                          console.log('Simulated removal from groups and events');
-                          
-                  await User.findByIdAndDelete(userId);
+                     console.log('User would be deleted:', userId);
+                     console.log('Simulated removal from groups and events');
 
-                  const messages = await Message.find({ author: userId });
-                  const messageIds = messages.map(msg => msg._id);
-                
+                     await User.findByIdAndDelete(userId);
 
-                
-                  await Group.updateMany(
-                     { messages: { $in: messageIds } },
-                     { $pull: { messages: { $in: messageIds } } }
-                   );
-                   await Group.updateMany({ Users: userId }, { $pull: { Users: userId } });
-
-                  return  res.status(200).json({ message: 'User and associated data deleted successfully' });
-                    
-                    
+                     const messages = await Message.find({ author: userId });
+                     const messageIds = messages.map(msg => msg._id);
 
 
 
-       
+                     await Group.updateMany(
+                            { messages: { $in: messageIds } },
+                            { $pull: { messages: { $in: messageIds } } }
+                     );
+                     await Group.updateMany({ Users: userId }, { $pull: { Users: userId } });
 
-                     
+                     return res.status(200).json({ message: 'User and associated data deleted successfully' });
 
 
 
-              }catch(error){
-                     res.status(500).json({message:"Error delete User"})
+
+
+
+
+
+
+
+
+              } catch (error) {
+                     res.status(500).json({ message: "Error delete User" })
               }
 
        },
