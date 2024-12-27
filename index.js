@@ -37,12 +37,10 @@ const io = new Server(server, {
 
 // Socket.IO configuration
 io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
 
     // Join a group
     socket.on('joinGroup', async (groupId) => {
         socket.join(groupId);
-        console.log(`User joined group: ${groupId}`);
 
         // Fetch chat history
         try {
@@ -66,7 +64,6 @@ io.on('connection', (socket) => {
     // Leave a group
     socket.on('leaveGroup', (groupId) => {
         socket.leave(groupId);
-        console.log(`User left group: ${groupId}`);
     });
 
     // Handle sending messages
