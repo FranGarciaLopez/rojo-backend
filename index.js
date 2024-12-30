@@ -146,7 +146,7 @@ app.use('/photos', photosRouter);
 app.use('/forgotpassword', usersRouter);
 app.use('/blogs', blogRouter);
 
-const port = process.env.PORT ||  3000;
+const port = process.env.PORT ||  10000;
 server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
