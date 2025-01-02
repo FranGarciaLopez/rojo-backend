@@ -17,7 +17,6 @@ const authMiddlewares = {
       next();
 
     } catch (err) {
-      console.log("Error validating token", err);
       return res.status(401).send("You are not authorized");
     }
   },

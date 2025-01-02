@@ -374,8 +374,6 @@ const userController = {
               try {
 
                      const { userId } = req.user;
-                     console.log(userId);
-
 
                      const user = await User.findById(userId);
 
@@ -383,15 +381,10 @@ const userController = {
                             return res.status(404).json({ message: 'User not found' });
                      }
 
-                     console.log('User would be deleted:', userId);
-                     console.log('Simulated removal from groups and events');
-
                      await User.findByIdAndDelete(userId);
 
                      const messages = await Message.find({ author: userId });
                      const messageIds = messages.map(msg => msg._id);
-
-
 
                      await Group.updateMany(
                             { messages: { $in: messageIds } },
@@ -400,16 +393,6 @@ const userController = {
                      await Group.updateMany({ Users: userId }, { $pull: { Users: userId } });
 
                      return res.status(200).json({ message: 'User and associated data deleted successfully' });
-
-
-
-
-
-
-
-
-
-
 
               } catch (error) {
                      res.status(500).json({ message: "Error delete User" })

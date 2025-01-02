@@ -114,9 +114,6 @@ const eventController = {
     async signUpForEvent(req, res) {
 
         try {
-            console.log('User ID from token:', req.user.userId);
-            console.log('Event ID from request body:', req.body.eventId);
-
             const userId = req.user.userId; // Extracted from the token
 
             const eventIdDocument = await Event.findById(req.body.eventId);
@@ -153,9 +150,6 @@ const eventController = {
             const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
         
             try {
-                console.log('event id', eventId);
-        
-           
                 const event = await Event.findOne({ _id: eventId });
         
                 if (!event) {
@@ -206,8 +200,6 @@ const eventController = {
             const eventId = req.params.eventId;
 
            const event=  await Event.findById(eventId);
-
-           console.log('event', event);
 
            if(!event){
             return res.status(404).json({message:"Event not found"})

@@ -29,7 +29,7 @@ app.use(express.json());
 
 const io = new Server(server, {
     cors: {
-        origin: ['https://rojo-frontend.onrender.com', 'https://dashboard.render.com'],
+        origin: ['https://rojo-frontend.onrender.com'],
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 
     }
@@ -72,7 +72,6 @@ io.on('connection', (socket) => {
                 return callback({ error: 'Invalid groupId.' });
             }
             if (!mongoose.Types.ObjectId.isValid(userId)) {
-                console.log('Invalid userId:', userId);
                 return callback({ error: 'Invalid userId.' });
             }
 
@@ -115,7 +114,7 @@ cloudinary.config({
 });
 
 app.use(cors({
-    origin: ['https://rojo-frontend.onrender.com', 'https://dashboard.render.com'],
+    origin: ['https://rojo-frontend.onrender.com'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
 }));

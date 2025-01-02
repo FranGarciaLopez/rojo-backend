@@ -5,7 +5,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 const photosController = {
   async uploadPhotos(req, res) {
     try {
-      console.log("Received Files:", req.files);
       const photoUrls = [];
 
       if (req.files && req.files.length > 0) {
@@ -21,10 +20,8 @@ const photosController = {
             stream.end(file.buffer);
           });
 
-          console.log("Result:", result);
           photoUrls.push(result.secure_url);
         }
-        console.log("Estas son las url que envia", photoUrls);
 
         return res.status(200).json({ urls: photoUrls });
 
