@@ -11,7 +11,7 @@ const eventsRouter = express.Router();
 
 eventsRouter.post('/eventregister', eventController.eventRegister);
 eventsRouter.get('/events', eventController.getEvents);
-eventsRouter.get('/events/:id', eventController.getEvent);
+eventsRouter.get('/:id', middlewares.validateToken, eventController.getEvent);
 eventsRouter.post('/signup', middlewares.validateToken, eventController.signUpForEvent);
 eventsRouter.patch('/editevent/:eventId', eventController.EditEvent);
 eventsRouter.delete('/eventdelete/:eventId', eventController.deleteEvent);
