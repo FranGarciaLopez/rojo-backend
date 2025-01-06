@@ -22,45 +22,56 @@ const storage = multer.memoryStorage();
 const eventController = {
     async eventRegister(req, res) {
         try {
-            const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
+            const {
+                title,
+                city,
+                description,
+                administrator, // This should match the `_id` of the user creating the event
+                dateTime,
+                location,
+                category,
+                photos,
+            } = req.body;
 
+            // Validate photos array
             if (!Array.isArray(photos)) {
-                return res.status(400).json({ message: 'photoUrls must be an array of URLs' });
+                return res.status(400).json({ message: "Photos must be an array of URLs" });
             }
 
+            // Validate or create city
             let cityDocument = await City.findOne({ name: city });
             if (!cityDocument) {
                 cityDocument = new City({ name: city });
                 await cityDocument.save();
             }
 
+            // Validate dateTime
             const parsedDateTime = new Date(dateTime);
             if (isNaN(parsedDateTime.getTime())) {
-                return res.status(400).json({ message: 'Invalid dateTime format' });
+                return res.status(400).json({ message: "Invalid dateTime format" });
             }
 
-
+            // Validate category
             const categoryDocument = await Category.findById(category);
             if (!categoryDocument) {
-                return res.status(400).json({ message: 'Invalid category ID' });
+                return res.status(400).json({ message: "Invalid category ID" });
             }
 
-
+            // Validate or create location
             let locationDocument = await Location.findOne({ name: location });
             if (!locationDocument) {
                 locationDocument = new Location({ name: location });
                 await locationDocument.save();
             }
 
-
-
+            // Create new event
             const newEvent = new Event({
                 title,
                 city: cityDocument._id,
                 description,
                 administrator,
                 dateTime: parsedDateTime,
-                location: null,
+                location: locationDocument._id,
                 category: categoryDocument._id,
                 photos,
                 createdAt: new Date().toISOString(),
@@ -69,17 +80,34 @@ const eventController = {
             });
 
             const savedEvent = await newEvent.save();
-            res.status(201).json(savedEvent);
+
+            // Increment organizedEvents for the administrator
+            const updatedUser = await User.findByIdAndUpdate(
+                administrator,
+                { $inc: { organizedEvents: 1 } }, // Increment organizedEvents by 1
+                { new: true } // Return the updated user document
+            );
+
+            // Check if user was successfully updated
+            if (!updatedUser) {
+                return res.status(404).json({ message: "Administrator user not found" });
+            }
+
+            res.status(201).json({
+                message: "Event created successfully",
+                event: savedEvent,
+                updatedUser: {
+                    organizedEvents: updatedUser.organizedEvents, // Include updated count in the response
+                },
+            });
         } catch (error) {
+            console.error("Error creating event:", error);
             res.status(500).json({
-                message: 'Error creating event',
-                error: error.message
+                message: "Error creating event",
+                error: error.message,
             });
         }
     },
-
-
-
 
     async getEvents(req, res) {
         try {
@@ -144,73 +172,73 @@ const eventController = {
             res.status(500).json({ error: 'Error al inscribirse al evento.' });
         }
     },
-   
-        async EditEvent(req, res) {
-            const { eventId } = req.params;
-            const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
-        
-            try {
-                const event = await Event.findOne({ _id: eventId });
-        
-                if (!event) {
-                    return res.status(404).json({ message: 'Event not found' });
-                }
-     
-                if (event.photos && event.photos.length > 0) {
-                    for (let i = 0; i < event.photos.length; i++) {
-                        const photoUrl = event.photos[i];
-                        const publicId = photoUrl.split('/').pop().split('.')[0];
-                        await cloudinary.uploader.destroy(publicId);
-                    }
-                }
-        
-              
-                let uploadedPhotos = [];
-                if (photos && photos.length > 0) {
-                    for (let i = 0; i < photos.length; i++) {
-                        const result = await cloudinary.uploader.upload(photos[i], {
-                            folder: 'event_photos',
-                        });
-                        uploadedPhotos.push(result.secure_url);
-                    }
-                }
-        
-              
-                if (title) event.title = title;
-                if (city) event.city = city;
-                if (description) event.description = description;
-                if (administrator) event.administrator = administrator;
-                if (dateTime) event.dateTime = dateTime; 
-                if (location) event.location = location;
-                if (category) event.category = category;
-                if (uploadedPhotos.length > 0) event.photos = uploadedPhotos;
-        
-               
-                const updatedEvent = await event.save();
-        
-                return res.status(200).json(updatedEvent);
-        
-            } catch (error) {
-                console.error(error);
-                return res.status(500).json({ message: 'Server error', error: error.message });
+
+    async EditEvent(req, res) {
+        const { eventId } = req.params;
+        const { title, city, description, administrator, dateTime, location, category, photos } = req.body;
+
+        try {
+            const event = await Event.findOne({ _id: eventId });
+
+            if (!event) {
+                return res.status(404).json({ message: 'Event not found' });
             }
-        },
 
-        async deleteEvent(req,res){
-            const eventId = req.params.eventId;
-
-           const event=  await Event.findById(eventId);
-
-           if(!event){
-            return res.status(404).json({message:"Event not found"})
-           }
+            if (event.photos && event.photos.length > 0) {
+                for (let i = 0; i < event.photos.length; i++) {
+                    const photoUrl = event.photos[i];
+                    const publicId = photoUrl.split('/').pop().split('.')[0];
+                    await cloudinary.uploader.destroy(publicId);
+                }
+            }
 
 
-           await Event.findByIdAndDelete(eventId);
+            let uploadedPhotos = [];
+            if (photos && photos.length > 0) {
+                for (let i = 0; i < photos.length; i++) {
+                    const result = await cloudinary.uploader.upload(photos[i], {
+                        folder: 'event_photos',
+                    });
+                    uploadedPhotos.push(result.secure_url);
+                }
+            }
 
-           return res.status(200).json({message:'Event deleted successfully'});
+
+            if (title) event.title = title;
+            if (city) event.city = city;
+            if (description) event.description = description;
+            if (administrator) event.administrator = administrator;
+            if (dateTime) event.dateTime = dateTime;
+            if (location) event.location = location;
+            if (category) event.category = category;
+            if (uploadedPhotos.length > 0) event.photos = uploadedPhotos;
+
+
+            const updatedEvent = await event.save();
+
+            return res.status(200).json(updatedEvent);
+
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ message: 'Server error', error: error.message });
         }
-        
+    },
+
+    async deleteEvent(req, res) {
+        const eventId = req.params.eventId;
+
+        const event = await Event.findById(eventId);
+
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" })
+        }
+
+
+        await Event.findByIdAndDelete(eventId);
+
+        return res.status(200).json({ message: 'Event deleted successfully' });
+    }
+
 
 
 };
