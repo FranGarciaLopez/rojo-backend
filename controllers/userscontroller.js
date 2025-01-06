@@ -372,19 +372,20 @@ const userController = {
 
        async deleteUser(req, res) {
               try {
+                     const { userId } = req.user; // User ID from the token
 
-                     const { userId } = req.user;
-
+                     // Check if the user exists
                      const user = await User.findById(userId);
-
                      if (!user) {
-                            return res.status(404).json({ message: 'User not found' });
+                            return res.status(404).json({ message: "User not found" });
                      }
 
+                     // Delete the user
                      await User.findByIdAndDelete(userId);
 
+                     // Clean up associated data (e.g., messages, groups)
                      const messages = await Message.find({ author: userId });
-                     const messageIds = messages.map(msg => msg._id);
+                     const messageIds = messages.map((msg) => msg._id);
 
                      await Group.updateMany(
                             { messages: { $in: messageIds } },
@@ -392,13 +393,84 @@ const userController = {
                      );
                      await Group.updateMany({ Users: userId }, { $pull: { Users: userId } });
 
-                     return res.status(200).json({ message: 'User and associated data deleted successfully' });
-
+                     return res.status(200).json({ message: "Account deleted successfully" });
               } catch (error) {
-                     res.status(500).json({ message: "Error delete User" })
+                     console.error("Error deleting user:", error);
+                     return res.status(500).json({ message: "Error deleting account. Please try again later." });
               }
-
        },
+
+       async deleteUserByAdmin(req, res) {
+              try {
+                     const { userId } = req.params; // User to be deleted
+
+                     // Ensure the user being deleted exists
+                     const userToDelete = await User.findById(userId);
+                     if (!userToDelete) {
+                            return res.status(404).json({ message: "User not found" });
+                     }
+
+                     // Prevent admin from deleting their own account (optional)
+                     if (req.user.userId === userId) {
+                            return res.status(400).json({ message: "Admins cannot delete their own account." });
+                     }
+
+                     // Perform the deletion
+                     await User.findByIdAndDelete(userId);
+
+                     return res.status(200).json({ message: "User deleted successfully by admin" });
+              } catch (error) {
+                     console.error("Error deleting user by admin:", error);
+                     return res.status(500).json({ message: "Error deleting user. Please try again later." });
+              }
+       },
+
+       // Update user settings (PATCH)
+       async patchUser(req, res) {
+              try {
+                     const userId = req.user.userId;
+                     const updates = req.body;
+                     // Validate if user exists
+                     const user = await User.findById(userId);
+                     if (!user) {
+                            return res.status(404).json({ message: 'User not found' });
+                     }
+
+                     // Validate city if provided
+                     if (updates.preferedCity) {
+                            const cityDocument = await City.findOne({ name: updates.preferedCity });
+                            if (!cityDocument) {
+                                   return res.status(400).json({ message: 'City does not exist' });
+                            }
+                            updates.preferedCity = cityDocument._id;
+                     }
+
+                     if (updates.preferedCategory) {
+                            const categoryDocument = await Category.findOne({ categoryName: updates.preferedCategory });
+                            if (!categoryDocument) {
+                                   return res.status(400).json({ message: 'Category does not exist' });
+                            }
+                            updates.preferedCategory = categoryDocument._id;
+                     }
+
+                     Object.keys(updates).forEach((key) => {
+                            user[key] = updates[key];
+                     });
+                     user.modifiedAt = new Date();
+
+                     await user.save();
+
+                     res.status(200).json({
+                            message: 'User updated successfully',
+                            user,
+                     });
+              } catch (error) {
+
+                     res.status(500).json({ message: 'An error occurred while updating the user' });
+                     throw error;
+              }
+       }
+
 };
 
 module.exports = userController;
