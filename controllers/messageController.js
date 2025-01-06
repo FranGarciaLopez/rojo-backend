@@ -13,8 +13,6 @@ const messageController = {
 
         .exec(); // Ensures the query runs properly
 
-      console.log('Populated Messages:', JSON.stringify(messages, null, 2)); // Debugging
-
       res.status(200).json(messages);
     } catch (error) {
       console.error('Error getting messages:', error);
