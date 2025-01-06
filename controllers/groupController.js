@@ -42,87 +42,105 @@ const groupController = {
 
     async create(req, res) {
         try {
-            console.log('+'.repeat(60));
-            console.log(" > Starting group creation process");
-
-            // Agrupar usuarios por eventos de interés
+            /* console.log("+".repeat(60)); */
+            /* console.log(" > Starting group creation process"); */
+    
+            // Group users by interested events
             const usersByInterest = await User.aggregate([
                 {
+                    $match: { interestedEvents: { $exists: true, $ne: [] } },
+                },
+                {
                     $group: {
-                        _id: "$interestedEvents",
+                        _id: null, // Group all users together
                         users: { $push: "$_id" },
                     },
                 },
-                {
-                    $match: {
-                        _id: { $ne: null },
-                    },
-                },
             ]);
-
-            const allUsers = [];
-            usersByInterest.forEach(event => {
-                allUsers.push(...event.users);
-            });
-
-            // Barajar usuarios
+    
+            if (!usersByInterest.length) {
+                /* console.log("No users with interested events found."); */
+                return res
+                    .status(404)
+                    .json({ success: false, message: "No users with interested events found." });
+            }
+    
+            const allUsers = usersByInterest[0].users;
+    
+            // Shuffle users
             shuffleArray(allUsers);
-
-            // Dividir en 2 grupos
-            const midIndex = Math.ceil(allUsers.length / 2);
-            const group1Users = allUsers.slice(0, midIndex);
-            const group2Users = allUsers.slice(midIndex);
-
-            const twoGroups = [
-                { eventId: "group1", users: group1Users },
-                { eventId: "group2", users: group2Users },
-            ];
-
-            console.log(' > Saving groups to the database ');
-            for (const group of twoGroups) {
-                // Select a valid eventId from the first user's interestedEvents array
-                const firstUser = group.users[0];
-                const userDoc = await User.findById(firstUser);
-
-                if (!userDoc || !userDoc.interestedEvents.length) {
-                    console.error(`No interested events found for user: ${firstUser}`);
-                    continue; // Skip group creation if no valid interested events
+    
+            // Split users into groups of 2
+            const groups = [];
+            for (let i = 0; i < allUsers.length; i += 2) {
+                const groupUsers = allUsers.slice(i, i + 2);
+                if (groupUsers.length === 2) {
+                    groups.push(groupUsers);
                 }
-
-                // Select the first eventId (or use a more advanced selection logic)
-                const selectedEventId = userDoc.interestedEvents[0];
-
-                // Validate eventId
-                if (!mongoose.Types.ObjectId.isValid(selectedEventId)) {
-                    console.error(`Invalid eventId: ${selectedEventId}`);
-                    continue; // Skip group creation if eventId is invalid
+            }
+    
+            if (!groups.length) {
+                /* console.log("No valid groups could be created."); */
+                return res
+                    .status(400)
+                    .json({ success: false, message: "No valid groups could be created." });
+            }
+    
+            /* console.log(" > Saving groups to the database"); */
+    
+            const usedEvents = new Set(); // Track used event IDs
+    
+            for (const groupUsers of groups) {
+                // Find a unique event for the group
+                let selectedEventId = null;
+    
+                for (const userId of groupUsers) {
+                    const user = await User.findById(userId);
+    
+                    if (user && user.interestedEvents.length) {
+                        // Find the first event not already used
+                        selectedEventId = user.interestedEvents.find(
+                            (eventId) => !usedEvents.has(eventId.toString())
+                        );
+                        if (selectedEventId) break;
+                    }
                 }
-
+    
+                if (!selectedEventId) {
+                    /* console.error("No available unique event for the group."); */
+                    continue; // Skip this group if no unique event is available
+                }
+    
+                usedEvents.add(selectedEventId.toString()); // Mark this event as used
+    
+                // Create and save the group
                 const newGroup = new Group({
-                    Users: group.users.map(userId => new mongoose.Types.ObjectId(userId)),
+                    Users: groupUsers.map((userId) => new mongoose.Types.ObjectId(userId)),
                     interestedEvents: [new mongoose.Types.ObjectId(selectedEventId)],
                 });
-
+    
                 const savedGroup = await newGroup.save();
-
-                // Update users to reference this group
-                for (const userId of group.users) {
-                    await User.findByIdAndUpdate(userId, { $push: { groups: savedGroup._id } });
-                }
-
-                console.log(`Group ${savedGroup._id} created successfully`);
+                /* console.log(
+                    `Group ${savedGroup._id} created successfully with users: ${groupUsers}`
+                ); */
+    
+                // Update users with the new group
+                const updateResults = await User.updateMany(
+                    { _id: { $in: groupUsers } },
+                    { $push: { groups: savedGroup._id } }
+                );
+                /* console.log("User update results:", updateResults); */
             }
-
-
-
-
-            console.log('-'.repeat(60));
-            return { success: true, message: "Groups created successfully" };
+    
+            /* console.log("-".repeat(60)); */
+            return res
+                .status(200)
+                .json({ success: true, message: "Groups created successfully" });
         } catch (error) {
-            console.error("Error during group creation:", error);
-            return { success: false, error: error.message };
+            /* console.error("Error during group creation:", error); */
+            return res.status(500).json({ success: false, error: error.message });
         }
-    },
+    },    
 
     async sendMessage(req, res) {
         try {
@@ -166,19 +184,19 @@ const groupController = {
 
     async eraseAll(req, res) {
         try {
-            console.log('+'.repeat(60));
+            /* console.log('+'.repeat(60));
             console.log("\n > Result of POST/GROUP/ERASEALL ");
             console.log(`\n > > All Groups will be erased from the DB \n`);
-            console.log('+'.repeat(60));
+            console.log('+'.repeat(60)); */
 
             const result = await Group.deleteMany({});
             const text_back = result.deletedCount + ' documents deleted successfully.';
-            console.log(`\n ${text_back} \n`);
-            console.log('-'.repeat(60));
+            /* console.log(`\n ${text_back} \n`);
+            console.log('-'.repeat(60)); */
 
             res.status(200).json({ text_back });
         } catch (error) {
-            console.error("Error deleting groups:", error);
+            /* console.error("Error deleting groups:", error); */
             res.status(500).json({ message: 'Error deleting groups.', error });
         }
     },
@@ -243,24 +261,52 @@ const groupController = {
         }
     },
 
+    async findGroupsByUser(req, res) {
+        try {
+            const { userId } = req.params;
+
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return res.status(400).json({ error: "Invalid user ID." });
+            }
+
+            const groups = await Group.find({ Users: userId })
+                .populate({
+                    path: "messages",
+                    populate: { path: "author", select: "firstname lastname" },
+                })
+                .populate("Users", "firstname lastname email");
+
+            res.status(200).json(groups);
+        } catch (error) {
+            console.error("Error finding groups by user:", error);
+            res.status(500).json({ error: "Internal Server Error." });
+        }
+    },
+
     async findGroupById(req, res) {
         try {
             const { groupId } = req.params;
 
-            const group = await Group.findById(groupId)
-                .populate({
-                    path: 'messages',
-                    populate: { path: 'author', select: 'firstname lastname' },
-                });
-
-            if (!group) {
-                return res.status(404).json({ error: 'Group not found.' });
+            if (!mongoose.Types.ObjectId.isValid(groupId)) {
+                return res.status(400).json({ error: "Invalid group ID." });
             }
 
+            const group = await Group.findById(groupId)
+                .populate({
+                    path: "messages",
+                    populate: { path: "author", select: "firstname lastname" },
+                })
+                .populate("Users", "firstname lastname email"); // Populate Users field for debug
+
+            if (!group) {
+                return res.status(404).json({ error: "Group not found." });
+            }
+
+            console.log("Fetched Group:", group); // Debugging log
             res.status(200).json(group);
         } catch (error) {
-            console.error('Error finding group:', error);
-            res.status(500).json({ error: 'Internal Server Error.' });
+            console.error("Error finding group:", error);
+            res.status(500).json({ error: "Internal Server Error." });
         }
     }
 };

@@ -7,7 +7,8 @@ const { getUsers } = require('../controllers/userscontroller');
 const groupRouter = express.Router();
 
 groupRouter.post('/create', validateToken, groupController.create);
-groupRouter.post('/eraseall', validateToken, groupController.eraseAll);
+groupRouter.delete('/eraseall', validateToken, groupController.eraseAll);
+groupRouter.get('/user/:userId', validateToken, groupController.findGroupsByUser);
 groupRouter.get('/showall', validateToken, groupController.showAll);
 /* groupRouter.get('/:groupId', validateToken, groupController.getGroupById); */
 groupRouter.get('/:groupId/messages', validateToken, groupController.getMessages);
