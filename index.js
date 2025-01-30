@@ -1,85 +1,166 @@
-// IMPORTING ----------------------
 const express = require('express');
-const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
-const users = require("./database/users");
-const authMiddlewares = require("./middlewares");
-const usersRouter= require("./routes/usersRouter");
+const cors = require('cors');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const http = require('http');
+const { Server } = require('socket.io');
+const cron = require('node-cron');
 
-const app = express();
-const port = 3000;
+const usersRouter = require('./routes/usersRouter');
+const eventsRouter = require('./routes/eventsRouter');
+const citiesRouter = require('./routes/citiesRouter');
+const categoriesRouter = require('./routes/categoriesRouter');
+const groupRouter = require('./routes/groupRouter');
+const photosRouter = require('./routes/photosRouter');
+const blogRouter = require('./routes/blogsRouter');
+const Message = require('./models/Message');
+const Group = require('./models/Group');
+const User = require('./models/User');
+const groupController = require('./controllers/groupController');
 
-// DB SETTING --------------------
 dotenv.config();
 
-const mongoose = require("mongoose");
-const encodePassword = encodeURIComponent(process.env.DB_PASSWORD);
-const mongoDB =
-  "mongodb+srv://" +
-  process.env.DB_USER +
-  ":" +
-  encodePassword +
-  "@" +
-  process.env.DB_SERVER +
-  "/" +
-  process.env.DB_NAME +
-  "?retryWrites=true&w=majority";
-async function main() {
-  try {
-    await mongoose.connect(mongoDB);
-      console.log("Conexión a MongoDB exitosa");
-  } catch (err) {
-    console.log("Error conectando a MongoDB:", err);
-  }
-}
-main().catch((err) => console.log(err));
-
-// ROUTES -----------------------------
-
+const app = express();
+const server = http.createServer(app);
 
 app.use(express.json());
 
+const io = new Server(server, {
+    cors: {
+        origin: ['https://rojo-frontend.onrender.com'],
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 
-app.use('/', usersRouter);
+    }
+});
 
-const crypto = require('crypto');
+// Socket.IO configuration
+io.on('connection', (socket) => {
+    // Join a group
+    socket.on('joinGroup', async (groupId) => {
+        socket.join(groupId);
 
-function generateSecret(length = 32) {
-    return crypto.randomBytes(length).toString('hex');
+        // Fetch chat history
+        try {
+            const group = await Group.findById(groupId)
+                .populate({
+                    path: 'messages',
+                    populate: {
+                        path: 'author',
+                        select: 'firstname lastname',
+                    },
+                });
+
+            if (group) {
+                socket.emit('chatHistory', group.messages);
+            }
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
+        }
+    });
+
+    // Leave a group
+    socket.on('leaveGroup', (groupId) => {
+        socket.leave(groupId);
+    });
+
+    // Handle sending messages
+    socket.on('sendMessage', async ({ groupId, content, userId }, callback) => {
+        try {
+            if (!mongoose.Types.ObjectId.isValid(groupId)) {
+                return callback({ error: 'Invalid groupId.' });
+            }
+            if (!mongoose.Types.ObjectId.isValid(userId)) {
+                return callback({ error: 'Invalid userId.' });
+            }
+
+            // Create a new message
+            const message = new Message({
+                group: new mongoose.Types.ObjectId(groupId),
+                author: new mongoose.Types.ObjectId(userId),
+                content,
+            });
+            await message.save();
+
+            // Populate the author details
+            const populatedMessage = await Message.findById(message._id).populate('author', 'firstname lastname');
+
+            // Update the group's message list
+            await Group.findByIdAndUpdate(groupId, { $push: { messages: message._id } });
+
+            // Emit the populated message to all users in the group
+            io.to(groupId).emit('receiveMessage', {
+                groupId,
+                content: populatedMessage.content,
+                author: populatedMessage.author,
+                timestamp: populatedMessage.timestamp,
+                sender: socket.id,
+            });
+
+            callback({ success: true });
+        } catch (err) {
+            console.error('Error sending message:', err);
+            callback({ error: 'Internal server error.' });
+        }
+    });
+});
+
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+app.use(cors({
+    origin: ['https://rojo-frontend.onrender.com'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true,
+}));
+
+const upload = multer({ dest: 'uploads/' });
+
+// MongoDB connection
+const mongoDB = `mongodb+srv://${process.env.DB_USER}:${encodeURIComponent(process.env.DB_PASSWORD)}@${process.env.DB_SERVER}/${process.env.DB_NAME}?retryWrites=true&w=majority`;
+
+async function main() {
+    try {
+        if (process.env.NODE_ENV !== 'test') {
+            await mongoose.connect(mongoDB);
+            console.log('Connected to MongoDB');
+        }
+    } catch (err) {
+        console.error('Error connecting to MongoDB:', err);
+    }
 }
+main();
 
-//console.log(generateSecret(16));
+// Routers
+app.use('/', usersRouter);
+app.use('/events', eventsRouter);
+app.use('/cities', citiesRouter);
+app.use('/categories', categoriesRouter);
+app.use('/groups', groupRouter);
+app.use('/photos', photosRouter);
+app.use('/forgotpassword', usersRouter);
+app.use('/blogs', blogRouter);
 
-
-/*
-  app.get("/", (req, res) => {
-    res.send("Hello World 2!");
-  });
-
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-  const user = users.find((userDB) => userDB.username === username);
-  if (user && user.password === password) {
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.SECRET
-    );
-    return res.status(201).send({ token });
-  }
-  return res.status(401).send("Username or password is not correct");
+const port = process.env.PORT ||  10000;
+server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
 
-  app.get("/user", authMiddlewares.validateToken, (req, res) => {
-    const user = users.find((userDB) => userDB.id === req.user.id);
-    res.status(200).send(user);
-  });
+// Uncomment the cron job if needed
+// cron.schedule('*/2 * * * *', () => {
+//   console.log('Executing user grouping task every 2 minutes...');
+//   groupController.create();
+// });
 
-app.get("/secret", (req, res) => {
-  res.send(require("crypto").randomBytes(32).toString("hex"));
-});*/
+// Uncomment the cron job if needed
+// cron.schedule('*/4 * * * *', () => {
+//   console.log('Executing user grouping task every 4 minutes...');
+//   groupController.eraseAll();
+// });
 
-// Listening ---------------------------------------------------
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
 module.exports = { app };
