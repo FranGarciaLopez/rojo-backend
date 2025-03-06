@@ -1,9 +1,7 @@
-
 const mongoose = require("mongoose");
 
-
 const Schema = mongoose.Schema;
-const EventSchema = new Schema({
+const EventV2Schema = new Schema({
   title: { type: String, required: true },
   city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' },
   description: { type: String, required: true },
@@ -15,5 +13,5 @@ const EventSchema = new Schema({
   location: { type: mongoose.Schema.Types.ObjectId, ref: 'Location' },
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   photos: [{ type: String }] // array photos (url, path...)
-});
-module.exports = mongoose.model("Event", EventSchema);
+}, { collection: 'Events_v2' });
+module.exports = mongoose.model("Events_v2", EventV2Schema);

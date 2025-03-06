@@ -15,10 +15,17 @@ const categoriesRouter = require('./routes/categoriesRouter');
 const groupRouter = require('./routes/groupRouter');
 const photosRouter = require('./routes/photosRouter');
 const blogRouter = require('./routes/blogsRouter');
+const eventManagerRouter = require('./routes/eventManagerRouter');
+
+const questionnaire = require('./models/Questionnaire');
+const questionnaireRouter = require('./routes/questionnaireRouter');
+
 const Message = require('./models/Message');
 const Group = require('./models/Group');
 const User = require('./models/User');
+
 const groupController = require('./controllers/groupController');
+
 
 dotenv.config();
 
@@ -145,6 +152,8 @@ app.use('/groups', groupRouter);
 app.use('/photos', photosRouter);
 app.use('/forgotpassword', usersRouter);
 app.use('/blogs', blogRouter);
+app.use('/questionnaire', questionnaireRouter);
+app.use('/eventManager', eventManagerRouter);
 
 const port = process.env.PORT ||  10000;
 server.listen(port, () => {
