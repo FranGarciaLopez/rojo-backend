@@ -78,28 +78,32 @@ const userController = {
                             return res.status(401).json({ message: "Invalid credentials" });
                      }
 
-                     // Generate JWT
+                     // Generate JWT with minimal required data
                      const token = jwt.sign(
                             {
-                                   email: user.email,
-                                   firstname: user.firstname,
+                                   userId: user._id, // Only store ID, avoids duplicating user details
                                    isAdministrator: user.isAdministrator,
                                    requiresOnboarding: user.requiresOnboarding,
-                                   userId: user._id,
-                                   avatar: user.avatar,
                             },
                             process.env.SECRET
                      );
 
+                     // ✅ Return full user details separately (not inside the token)
                      res.status(200).json({
                             token,
-                            message: 'Login successful',
-                            isAdministrator: user.isAdministrator,
-                            requiresOnboarding: user.requiresOnboarding,
+                            message: "Login successful",
+                            user: {
+                                   _id: user._id,
+                                   email: user.email,
+                                   firstname: user.firstname,
+                                   isAdministrator: user.isAdministrator,
+                                   requiresOnboarding: user.requiresOnboarding,
+                                   avatar: user.avatar,
+                            },
                      });
               } catch (error) {
-                     console.error('Error during login:', error);
-                     res.status(500).json({ message: 'An error occurred during login' });
+                     console.error("Error during login:", error);
+                     res.status(500).json({ message: "An error occurred during login" });
               }
        },
 
@@ -107,25 +111,25 @@ const userController = {
        async updateUserPreferences(req, res) {
               try {
                      const { city, categoryName, dayOfTheWeek } = req.body;
-                     const userId = req.user.userId;
+                     const userId = req.user.userId; // ✅ Extract userId from token
 
                      // Validate city
                      const cityDocument = await City.findOne({ name: city });
                      if (!cityDocument) {
-                            return res.status(400).json({ message: 'City does not exist' });
+                            return res.status(400).json({ message: "City does not exist" });
                      }
 
                      // Validate category
                      const categoryDocument = await Category.findOne({ categoryName });
                      if (!categoryDocument) {
-                            return res.status(400).json({ message: 'Preferred activity does not exist' });
+                            return res.status(400).json({ message: "Preferred activity does not exist" });
                      }
 
-                     // Update user
+                     // ✅ Update user preferences and set `requiresOnboarding: false`
                      const updatedUser = await User.findByIdAndUpdate(
                             userId,
                             {
-                                   preferedCity: cityDocument._id,
+                                   preferredCity: cityDocument._id,
                                    categoryName: categoryDocument._id,
                                    dayOfTheWeek,
                                    requiresOnboarding: false,
@@ -134,19 +138,21 @@ const userController = {
                             { new: true }
                      );
 
+
                      if (!updatedUser) {
-                            return res.status(404).json({ message: 'User not found' });
+                            return res.status(404).json({ message: "User not found" });
                      }
 
                      res.status(200).json({
-                            message: 'User preferences updated successfully',
+                            message: "User preferences updated successfully",
                             user: updatedUser,
                      });
               } catch (error) {
-                     console.error('Error updating user preferences:', error);
-                     res.status(500).json({ message: 'Error updating preferences' });
+                     console.error("Error updating user preferences:", error);
+                     res.status(500).json({ message: "Error updating preferences" });
               }
        },
+
 
        // Get all users
        async getUsers(req, res) {
